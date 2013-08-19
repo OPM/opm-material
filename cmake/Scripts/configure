@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# where is the source tree located
+# where is the source tree located by default relative to here
 srcdir=$(dirname $(dirname $(dirname "$0")))
 
 # display help text
@@ -33,16 +33,14 @@ Optional Features:
   --enable-ninja          use Ninja build generator [default=no]
 
 Optional Packages:
+  --with-alugrid=PATH     use the ALUGrid library from a specified location
+  --with-metis=PATH       use the METIS graph partitioning library from a specified location
   --with-boost=PATH       use Boost library from a specified location
   --with-dune=PATH        specify parent of all DUNE modules not specified
   --with-dune-MODULE=PATH use given DUNE module from a specified location
   --with-opm=PATH         specify parent of all OPM modules not specified
   --with-opm-MODULE=PATH  use given OPM module from a specified location
   --with-superlu=PATH     user defined path to SuperLU library
-  --with-agmg=PATH        Include DOUBLE PRECISION version Notay's of AGMG
-                          Algebraic Multigrid solver from specified source
-                          location. Note: this option requires a complete,
-                          working Fortran 90 environment.
   --with-umfpack=PATH     use UMFPACK/SuiteSparse from a specified location
   --with-ert=PATH         Use ERT libraries
   --with-tinyxml=PATH     use TinyXML library from a specified location
@@ -143,6 +141,11 @@ for OPT in "$@"; do
       OPTARG=${OPT#--}
       # OPTARG now contains everything after double dashes
       case "${OPTARG}" in
+        src-dir=*)
+          # allow the user to use these build macros for another
+          # project (so source-dir is not relative to us)
+          srcdir=${OPTARG#*=}
+          ;;
         prefix=*)
           # remove prefix consisting of everything up to equal sign
           prefix=${OPTARG#*=}
@@ -187,9 +190,10 @@ for OPT in "$@"; do
             mpi-prefix)
               rootvar="_MPI_PREFIX_PATH"
               ;;
-            agmg        |\
-            ert         |\
+            alugrid     |\
             boost       |\
+            ert         |\
+            metis       |\
             superlu     |\
             SuiteSparse |\
             TinyXML     |\
@@ -280,7 +284,6 @@ for OPT in "$@"; do
               use_ninja=""
               pkgname=""
               ;;
-            agmg |\
             ert  |\
             superlu)
               pkgname="${pkgname^^}"

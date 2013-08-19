@@ -3,6 +3,9 @@
 #
 # Sets the follwing variable:
 #
+# HAVE_TYPE_TRAITS                 True if the <type_traits> header is available and implements sufficient functionality
+# HAVE_SHARED_PTR                  True if std::shared_ptr is available
+# HAVE_UNIQUE_PTR                  True if std::unique_ptr is available
 # HAVE_NULLPTR                     True if nullptr is available
 # HAVE_ARRAY                       True if header <array> and fill() are available
 # HAVE_ATTRIBUTE_ALWAYS_INLINE     True if attribute always inline is supported
@@ -42,6 +45,46 @@ endif(CXX_FLAG_CXX11)
 
 # perform tests
 include(CheckCXXSourceCompiles)
+
+# std::is_convertible, std::is_base_of
+CHECK_CXX_SOURCE_COMPILES("
+#include <type_traits>
+
+class Base {};
+class Derived : public Base {};
+
+int main()
+{
+    bool foo = std::is_convertible<int, double>::value;
+    bool bar = std::is_base_of<Base, Derived>::value;
+    return 0;
+}
+"  HAVE_TYPE_TRAITS
+)
+
+# nullptr
+CHECK_CXX_SOURCE_COMPILES("
+    #include <memory>
+
+    int main(void)
+    {
+      std::shared_ptr<int> foo(new int(123));
+      return 0;
+    }
+"  HAVE_SHARED_PTR
+)
+
+# nullptr
+CHECK_CXX_SOURCE_COMPILES("
+    #include <memory>
+
+    int main(void)
+    {
+      std::unique_ptr<int> foo(new int(123));
+      return 0;
+    }
+"  HAVE_UNIQUE_PTR
+)
 
 # nullptr
 CHECK_CXX_SOURCE_COMPILES("
@@ -296,6 +339,18 @@ endforeach(_HEADER tuple tr1/tuple tr1/type_traits)
 # superset of those provided by GCC 4.4. This makes the test fail on
 # all GCC compilers before 4.4.
 set(CXX_FEATURES_MISSING "")
+if (NOT HAVE_TYPE_TRAITS)
+  set(CXX_FEATURES_MISSING
+      "${CXX_FEATURES_MISSING} - Sufficiently conformant type traits (defined by the 'type_traits' header file)\n")
+endif()
+if (NOT HAVE_SHARED_PTR)
+  set(CXX_FEATURES_MISSING
+      "${CXX_FEATURES_MISSING} - Shared pointers (the std::shared_ptr class)\n")
+endif()
+if (NOT HAVE_UNIQUE_PTR)
+  set(CXX_FEATURES_MISSING
+      "${CXX_FEATURES_MISSING} - Unique pointers (the std::unique_ptr class)\n")
+endif()
 if (NOT HAVE_ARRAY)
   set(CXX_FEATURES_MISSING
       "${CXX_FEATURES_MISSING} - Statically sized arrays (the std::array class)\n")
@@ -334,4 +389,6 @@ if(CXX_FEATURES_MISSING)
       "Your compiler does not seem to implement the following features:\n"
       "${CXX_FEATURES_MISSING}")
   endif()
+else ()
+  set (CXX11FEATURES_FOUND TRUE)
 endif()
