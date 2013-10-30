@@ -2,7 +2,7 @@
 # spec file for package opm-material
 #
 
-%define tag rc3
+%define tag final
 
 Name:           opm-material
 Version:        2013.10
