@@ -209,22 +209,14 @@ public:
 
     MaterialLawParams& materialLawParams(unsigned elemIdx)
     {
-        if (hasElementSpecificParameters()) {
-            assert(0 <= elemIdx && elemIdx < materialLawParams_.size());
-            return *materialLawParams_[elemIdx];
-        }
-        else
-            return *materialLawParams_[satnumRegionIdx_[elemIdx]];
+        assert(0 <= elemIdx && elemIdx < materialLawParams_.size());
+        return *materialLawParams_[elemIdx];
     }
 
     const MaterialLawParams& materialLawParams(unsigned elemIdx) const
     {
-        if (hasElementSpecificParameters()) {
-            assert(0 <= elemIdx && elemIdx < (int) materialLawParams_.size());
-            return *materialLawParams_[elemIdx];
-        }
-        else
-            return *materialLawParams_[satnumRegionIdx_[elemIdx]];
+        assert(0 <= elemIdx && elemIdx < (int) materialLawParams_.size());
+        return *materialLawParams_[elemIdx];
     }
 
     template <class FluidState>
