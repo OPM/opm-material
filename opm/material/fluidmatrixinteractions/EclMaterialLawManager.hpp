@@ -3,6 +3,8 @@
 /*
   Copyright (C) 2015 by Andreas Lauser
   Copyright (C) 2015 by IRIS AS
+  Copyright (C) 2015 by Dr. Blatt - HPC-Simulation-Software & Services
+  Copyright (C) 2015 by Statoil AS
 
   This file is part of the Open Porous Media project (OPM).
 
