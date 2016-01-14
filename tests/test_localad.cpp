@@ -462,10 +462,9 @@ double myScalarMin(double a, double b)
 double myScalarMax(double a, double b)
 { return std::max(a, b); }
 
-int main()
+template <class Scalar>
+inline void testAll()
 {
-    typedef double Scalar;
-
     typedef TestVariables VarsDescriptor;
 
     // the following is commented out because it is supposed to produce a compiler
@@ -552,6 +551,11 @@ int main()
     test1DFunction<Scalar, VarsDescriptor>(Opm::LocalAd::log<Scalar, VarsDescriptor, VarsDescriptor::size>,
                                            static_cast<Scalar (*)(Scalar)>(std::log),
                                            1e-6, 1e9);
+}
 
+int main()
+{
+    testAll< double >();
+    testAll< float  >();
     return 0;
 }

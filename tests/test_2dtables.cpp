@@ -35,9 +35,6 @@
 #include <iostream>
 
 
-//typedef double Scalar;
-//typedef float Scalar;
-
 template <class ScalarT>
 struct Test
 {
