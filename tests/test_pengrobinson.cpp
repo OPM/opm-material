@@ -476,6 +476,6 @@ inline void testAll()
 int main(int /*argc*/, char** /*argv*/)
 {
     testAll< double >();
-    // testAll< float  >();
+    //testAll< float  >();
     return 0;
 }
