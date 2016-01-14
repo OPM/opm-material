@@ -121,9 +121,9 @@ public:
             // update the tables for the formation volume factor and for the gas
             // dissolution factor of saturated oil
             {
-                std::vector<Scalar> tmpPressureColumn = saturatedTable.getColumn("RS").vectorCopy();
-                std::vector<Scalar> tmpGasSolubilityColumn = saturatedTable.getColumn("P").vectorCopy();
-                std::vector<Scalar> tmpMuColumn = saturatedTable.getColumn("MUO").vectorCopy( );
+                std::vector<double> tmpPressureColumn = saturatedTable.getColumn("RS").vectorCopy();
+                std::vector<double> tmpGasSolubilityColumn = saturatedTable.getColumn("P").vectorCopy();
+                std::vector<double> tmpMuColumn = saturatedTable.getColumn("MUO").vectorCopy( );
 
                 satOilMu.setXYContainers(tmpMuColumn , satOilMuArray);
                 invSatOilB.setXYContainers(tmpPressureColumn , invSatOilBArray);
@@ -171,9 +171,9 @@ private:
                           const SimpleTable& curTable,
                           const SimpleTable& masterTable)
     {
-        std::vector<Scalar> pressuresArray = curTable.getColumn("P").vectorCopy( );
-        std::vector<Scalar> oilBArray = curTable.getColumn("BO").vectorCopy( );
-        std::vector<Scalar> oilMuArray = curTable.getColumn("MU").vectorCopy( );
+        std::vector<double> pressuresArray = curTable.getColumn("P").vectorCopy( );
+        std::vector<double> oilBArray = curTable.getColumn("BO").vectorCopy( );
+        std::vector<double> oilMuArray = curTable.getColumn("MU").vectorCopy( );
 
         auto& invOilB = inverseOilBTable_[regionIdx];
         auto& oilMu = oilMuTable_[regionIdx];
