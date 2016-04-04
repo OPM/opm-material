@@ -17,4 +17,4 @@ and then builds $sha1 of opm-material. It is intended for pre-merge builds of pu
 You can optionally specify a given pull request to use for ert, opm-common
 and opm-parser through the trigger. The trigger line needs to contain
 ert=&lt;pull request number&gt; and/or opm-common=&lt;pull request number&gt;
-and/or opm-parser=&lt;pull request number&gt;.
+and/or opm-parser=&lt;pull request number&gt;. op opo9p
