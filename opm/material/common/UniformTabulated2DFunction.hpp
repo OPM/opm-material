@@ -147,7 +147,7 @@ public:
       */
     template <class Evaluation>
     Evaluation xToI(const Evaluation& x) const
-    { return (x - xMin())/(xMax() - xMin())*(numX() - 1); }
+    { return (x - xMin())*((numX() - 1)/(xMax() - xMin())); }
 
     /*!
      * \brief Return the interval index of a given position on the y-axis.
@@ -159,7 +159,7 @@ public:
      */
     template <class Evaluation>
     Evaluation yToJ(const Evaluation& y) const
-    { return (y - yMin())/(yMax() - yMin())*(numY() - 1); }
+    { return (y - yMin())*((numY() - 1)/(yMax() - yMin())); }
 
     /*!
      * \brief Returns true iff a coordinate lies in the tabulated range
