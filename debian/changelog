@@ -1,11 +1,5 @@
-opm-material (2015.04-1~precise) precise; urgency=medium
+opm-material (2016.04-rc1-1~trusty) trusty; urgency=medium
 
-  * Release new version
+  * New release
 
- -- Arne Morten Kvarving <arne.morten.kvarving@sintef.no>  Fri, 24 Apr 2015 14:51:11 +0200
-
-opm-material (2013.10-2~precise) precise; urgency=low
-
-  * Initial release
-
- -- Arne Morten Kvarving <arne.morten.kvarving@sintef.no>  Mon, 14 Jan 2013 15:33:54 +0100
+ -- Arne Morten Kvarving <arne.morten.kvarving@sintef.no>  Fri, 22 Apr 2016 10:39:27 +0200
