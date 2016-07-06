@@ -218,7 +218,7 @@ public:
         return materialLawParams_[elemIdx];
     }
 
-    std::shared_ptr<const MaterialLawParams>& materialLawParamsPointer(unsigned elemIdx) const
+    const std::shared_ptr<MaterialLawParams>& materialLawParamsPointer(unsigned elemIdx) const
     {
         assert(0 <= elemIdx && elemIdx < materialLawParams_.size());
         return materialLawParams_[elemIdx];
