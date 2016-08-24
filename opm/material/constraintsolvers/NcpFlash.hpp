@@ -579,6 +579,11 @@ protected:
         {
             unsigned phaseIdx = (pvIdx - numPhases)/numComponents;
             unsigned compIdx = (pvIdx - numPhases)%numComponents;
+
+            if (phaseIdx >= numPhases)
+                OPM_THROW(std::runtime_error,
+                          "The phase index must be smaller than the number of phases");
+
             return fluidState.moleFraction(phaseIdx, compIdx);
         }
     }
@@ -607,6 +612,11 @@ protected:
             assert(pvIdx < numPhases + numPhases*numComponents);
             unsigned phaseIdx = (pvIdx - numPhases)/numComponents;
             unsigned compIdx = (pvIdx - numPhases)%numComponents;
+
+            if (phaseIdx >= numPhases)
+                OPM_THROW(std::runtime_error,
+                          "The phase index must be smaller than the number of phases");
+
             fluidState.setMoleFraction(phaseIdx, compIdx, value);
         }
     }
