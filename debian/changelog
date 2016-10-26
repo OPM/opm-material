@@ -1,3 +1,9 @@
+opm-material (2016.10-rc1-1~xenial) xenial; urgency=medium
+
+  * Release new version
+
+ -- Arne Morten Kvarving <arne.morten.kvarving@sintef.no>  Wed, 26 Oct 2016 10:29:15 +0200
+
 opm-material (2015.04-1~precise) precise; urgency=medium
 
   * Release new version
