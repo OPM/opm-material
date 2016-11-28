@@ -33,6 +33,7 @@
 #include <opm/parser/eclipse/Deck/DeckKeyword.hpp>
 #include <opm/parser/eclipse/Deck/DeckRecord.hpp>
 #include <opm/parser/eclipse/EclipseState/EclipseState.hpp>
+#include <opm/parser/eclipse/EclipseState/Tables/JFunc.hpp>
 #include <opm/common/ErrorMacros.hpp>
 #include <opm/common/Exceptions.hpp>
 #endif
@@ -236,7 +237,8 @@ public:
         // determine the conversion factor for deck pressures to Pascals
         pToSiFactor_ = deck.getActiveUnitSystem().getDimension("Pressure").getSIScaling();
 
-        auto& props = eclState.get3DProperties();
+        const auto& props = eclState.get3DProperties();
+        const auto& jfunc = eclState.getTableManager().getJFunc();
         // check if we are supposed to scale the Y axis of the capillary pressure
         if (twoPhaseSystemType == EclOilWaterSystem) {
             enablePcScaling_ =
@@ -244,18 +246,8 @@ public:
                 || props.hasDeckDoubleGridProperty("SWATINIT");
 
             // check if Leverett capillary pressure scaling is requested
-            if (deck.hasKeyword("JFUNC")) {
-                const auto& jfuncKeyword = deck.getKeyword("JFUNC");
-                std::string flagString =
-                    jfuncKeyword.getRecord(0).getItem("FLAG").getTrimmedString(0);
-                std::transform(flagString.begin(),
-                               flagString.end(),
-                               flagString.begin(),
-                               ::toupper);
-
-                if (flagString == "BOTH" || flagString == "WATER")
+            if (jfunc && (jfunc.flag() == JFunc::Flag::BOTH || jfunc.flag() == JFunc::Flag::WATER))
                     enableLeverettScaling_ = true;
-            }
 
             if (enablePcScaling_ && enableLeverettScaling_)
                 OPM_THROW(std::runtime_error,
@@ -268,18 +260,8 @@ public:
             enablePcScaling_ = props.hasDeckDoubleGridProperty("PCG");
 
             // check if Leverett capillary pressure scaling is requested
-            if (deck.hasKeyword("JFUNC")) {
-                const auto& jfuncKeyword = deck.getKeyword("JFUNC");
-                std::string flagString =
-                    jfuncKeyword.getRecord(0).getItem("FLAG").getTrimmedString(0);
-                std::transform(flagString.begin(),
-                               flagString.end(),
-                               flagString.begin(),
-                               ::toupper);
-
-                if (flagString == "BOTH" || flagString == "GAS")
+            if (jfunc && (jfunc.flag() == JFunc::Flag::BOTH || jfunc.flag() == JFunc::Flag::GAS))
                     enableLeverettScaling_ = true;
-            }
 
             if (enablePcScaling_ && enableLeverettScaling_)
                 OPM_THROW(std::runtime_error,
