@@ -245,7 +245,7 @@ inline void testAll()
     // constant compressibility water
     //////////
     Opm::ConstantCompressibilityWaterPvt<Scalar> constCompWaterPvt;
-    constCompWaterPvt.initFromDeck(deck, eclState);
+    constCompWaterPvt.initFromDeck(eclState);
 
     // make sure that the values at the reference points are the ones specified in the
     // deck.
@@ -278,9 +278,9 @@ inline void testAll()
     Opm::OilPvtMultiplexer<Scalar> oilPvt;
     Opm::WaterPvtMultiplexer<Scalar> waterPvt;
 
-    gasPvt.initFromDeck(deck, eclState);
-    oilPvt.initFromDeck(deck, eclState);
-    waterPvt.initFromDeck(deck, eclState);
+    gasPvt.initFromDeck(eclState);
+    oilPvt.initFromDeck(eclState);
+    waterPvt.initFromDeck(eclState);
 
     typedef Opm::DenseAd::Evaluation<Scalar, 1> FooEval;
     ensurePvtApi<Scalar>(oilPvt, gasPvt, waterPvt);

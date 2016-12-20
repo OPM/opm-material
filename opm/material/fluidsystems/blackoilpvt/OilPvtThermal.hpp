@@ -35,7 +35,6 @@
 #include <opm/material/common/Spline.hpp>
 
 #if HAVE_OPM_PARSER
-#include <opm/parser/eclipse/Deck/Deck.hpp>
 #include <opm/parser/eclipse/EclipseState/EclipseState.hpp>
 #include <opm/parser/eclipse/EclipseState/Tables/SimpleTable.hpp>
 #include <opm/parser/eclipse/EclipseState/Tables/TableManager.hpp>
@@ -65,42 +64,40 @@ public:
     /*!
      * \brief Implement the temperature part of the oil PVT properties.
      */
-    void initFromDeck(const Deck& deck,
-                      const EclipseState& eclState)
+    void initFromDeck(const EclipseState& eclState)
     {
         //////
         // initialize the isothermal part
         //////
         isothermalPvt_ = new IsothermalPvt;
-        isothermalPvt_->initFromDeck(deck, eclState);
+        isothermalPvt_->initFromDeck(eclState);
 
         //////
         // initialize the thermal part
         //////
         const auto& tables = eclState.getTableManager();
 
-        enableThermalDensity_ = deck.hasKeyword("THERMEX1");
-        enableThermalViscosity_ = deck.hasKeyword("VISCREF");
+        enableThermalDensity_ = !tables.get_refs_material().THERMEX1.empty();
+        enableThermalViscosity_ = !tables.getViscrefTable().empty();
 
         unsigned numRegions = isothermalPvt_->numRegions();
         setNumRegions(numRegions);
 
         // viscosity
-        if (deck.hasKeyword("VISCREF")) {
+        if (!tables.getViscrefTable().empty()) {
             const auto& oilvisctTables = tables.getOilvisctTables();
-            const auto& viscrefKeyword = deck.getKeyword("VISCREF");
+            const auto& viscrefTable = tables.getViscrefTable();
 
             assert(oilvisctTables.size() == numRegions);
-            assert(viscrefKeyword.size() == numRegions);
+            assert(viscrefTable.size() == numRegions);
 
             for (unsigned regionIdx = 0; regionIdx < numRegions; ++regionIdx) {
                 const auto& TCol = oilvisctTables[regionIdx].getColumn("Temperature").vectorCopy();
                 const auto& muCol = oilvisctTables[regionIdx].getColumn("Viscosity").vectorCopy();
                 oilvisctCurves_[regionIdx].setXYContainers(TCol, muCol);
 
-                const auto& viscrefRecord = viscrefKeyword.getRecord(regionIdx);
-                viscrefPress_[regionIdx] = viscrefRecord.getItem("REFERENCE_PRESSURE").getSIDouble(0);
-                viscrefRs_[regionIdx] = viscrefRecord.getItem("REFERENCE_RS").getSIDouble(0);
+                viscrefPress_[regionIdx] = viscrefTable[regionIdx].reference_pressure;
+                viscrefRs_[regionIdx] = viscrefTable[regionIdx].reference_rs;
 
                 // temperature used to calculate the reference viscosity [K]. the
                 // value does not really matter if the underlying PVT object really
@@ -119,14 +116,15 @@ public:
         // quantities required for density. note that we just always use the values
         // for the first EOS. (since EOS != PVT region.)
         refTemp_ = 0.0;
-        if (deck.hasKeyword("THERMEX1")) {
-            int oilCompIdx = deck.getKeyword("OCOMPIDX").getRecord(0).getItem("OIL_COMPONENT_INDEX").get< int >(0) - 1;
+        if (enableThermalDensity_) {
+            const auto& refs = tables.get_refs_material();
+            int oilCompIdx = refs.oil_component_index;
 
             // always use the values of the first EOS
-            refTemp_ = deck.getKeyword("TREF").getRecord(0).getItem("TEMPERATURE").getSIDouble(oilCompIdx);
-            refPress_ = deck.getKeyword("PREF").getRecord(0).getItem("PRESSURE").getSIDouble(oilCompIdx);
-            refC_ = deck.getKeyword("CREF").getRecord(0).getItem("COMPRESSIBILITY").getSIDouble(oilCompIdx);
-            thermex1_ = deck.getKeyword("THERMEX1").getRecord(0).getItem("EXPANSION_COEFF").getSIDouble(oilCompIdx);
+            refTemp_ = refs.TREF.at(oilCompIdx);
+            refPress_ = refs.PREF.at(oilCompIdx);
+            refC_ = refs.CREF.at(oilCompIdx);
+            thermex1_ = refs.THERMEX1.at(oilCompIdx);
         }
     }
 #endif // HAVE_OPM_PARSER

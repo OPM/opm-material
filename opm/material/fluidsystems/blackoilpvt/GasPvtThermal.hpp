@@ -35,7 +35,6 @@
 #include <opm/material/common/Spline.hpp>
 
 #if HAVE_OPM_PARSER
-#include <opm/parser/eclipse/Deck/Deck.hpp>
 #include <opm/parser/eclipse/EclipseState/EclipseState.hpp>
 #include <opm/parser/eclipse/EclipseState/Tables/SimpleTable.hpp>
 #include <opm/parser/eclipse/EclipseState/Tables/TableManager.hpp>
@@ -65,22 +64,21 @@ public:
     /*!
      * \brief Implement the temperature part of the gas PVT properties.
      */
-    void initFromDeck(const Deck& deck,
-                      const EclipseState& eclState)
+    void initFromDeck(const EclipseState& eclState)
     {
         //////
         // initialize the isothermal part
         //////
         isothermalPvt_ = new IsothermalPvt;
-        isothermalPvt_->initFromDeck(deck, eclState);
+        isothermalPvt_->initFromDeck(eclState);
 
         //////
         // initialize the thermal part
         //////
         const auto& tables = eclState.getTableManager();
 
-        enableThermalDensity_ = deck.hasKeyword("TREF");
-        enableThermalViscosity_ = deck.hasKeyword("GASVISCT");
+        enableThermalDensity_ = !tables.get_refs_material().TREF.empty();
+        enableThermalViscosity_ = tables.hasTables("GASVISCT");
 
         unsigned numRegions = isothermalPvt_->numRegions();
         setNumRegions(numRegions);
@@ -88,7 +86,7 @@ public:
         // viscosity
         if (enableThermalViscosity_) {
             const auto& gasvisctTables = tables.getGasvisctTables();
-            int gasCompIdx = deck.getKeyword("GCOMPIDX").getRecord(0).getItem("GAS_COMPONENT_INDEX").get< int >(0) - 1;
+            int gasCompIdx = tables.get_refs_material().gas_component_index;
             std::string gasvisctColumnName = "Viscosity"+std::to_string(static_cast<long long>(gasCompIdx));
 
             for (unsigned regionIdx = 0; regionIdx < numRegions; ++regionIdx) {
@@ -102,7 +100,7 @@ public:
         // for the first EOS. (since EOS != PVT region.)
         refTemp_ = 0.0;
         if (enableThermalDensity_) {
-            refTemp_ = deck.getKeyword("TREF").getRecord(0).getItem("TEMPERATURE").getSIDouble(0);
+            refTemp_ = tables.get_refs_material().TREF.at(0);
         }
     }
 #endif // HAVE_OPM_PARSER

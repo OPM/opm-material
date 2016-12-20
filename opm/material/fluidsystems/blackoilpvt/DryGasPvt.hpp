@@ -32,12 +32,9 @@
 #include <opm/material/common/Tabulated1DFunction.hpp>
 
 #if HAVE_OPM_PARSER
-#include <opm/parser/eclipse/Deck/Deck.hpp>
 #include <opm/parser/eclipse/EclipseState/EclipseState.hpp>
 #include <opm/parser/eclipse/EclipseState/Tables/TableManager.hpp>
 #include <opm/parser/eclipse/EclipseState/Tables/PvdgTable.hpp>
-#include <opm/parser/eclipse/Deck/DeckKeyword.hpp>
-#include <opm/parser/eclipse/Deck/DeckRecord.hpp>
 #endif
 
 #include <vector>
@@ -60,10 +57,10 @@ public:
      *
      * This method assumes that the deck features valid DENSITY and PVDG keywords.
      */
-    void initFromDeck(const Deck& deck, const EclipseState& eclState)
+    void initFromDeck(const EclipseState& eclState)
     {
         const auto& pvdgTables = eclState.getTableManager().getPvdgTables();
-        const auto& densityKeyword = deck.getKeyword("DENSITY");
+        const auto& densityKeyword = eclState.getTableManager().getDensityTable();
 
         assert(pvdgTables.size() == densityKeyword.size());
 
@@ -71,9 +68,9 @@ public:
         setNumRegions(numRegions);
 
         for (unsigned regionIdx = 0; regionIdx < numRegions; ++ regionIdx) {
-            Scalar rhoRefO = densityKeyword.getRecord(regionIdx).getItem("OIL").getSIDouble(0);
-            Scalar rhoRefG = densityKeyword.getRecord(regionIdx).getItem("GAS").getSIDouble(0);
-            Scalar rhoRefW = densityKeyword.getRecord(regionIdx).getItem("WATER").getSIDouble(0);
+            Scalar rhoRefO = densityKeyword[regionIdx].oil;
+            Scalar rhoRefG = densityKeyword[regionIdx].gas;
+            Scalar rhoRefW = densityKeyword[regionIdx].water;
 
             setReferenceDensities(regionIdx, rhoRefO, rhoRefG, rhoRefW);
 

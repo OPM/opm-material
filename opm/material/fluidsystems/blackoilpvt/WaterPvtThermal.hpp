@@ -35,7 +35,6 @@
 #include <opm/material/common/Spline.hpp>
 
 #if HAVE_OPM_PARSER
-#include <opm/parser/eclipse/Deck/Deck.hpp>
 #include <opm/parser/eclipse/EclipseState/EclipseState.hpp>
 #include <opm/parser/eclipse/EclipseState/Tables/SimpleTable.hpp>
 #include <opm/parser/eclipse/EclipseState/Tables/TableManager.hpp>
@@ -65,42 +64,40 @@ public:
     /*!
      * \brief Implement the temperature part of the water PVT properties.
      */
-    void initFromDeck(const Deck& deck,
-                      const EclipseState& eclState)
+    void initFromDeck(const EclipseState& eclState)
     {
         //////
         // initialize the isothermal part
         //////
         isothermalPvt_ = new IsothermalPvt;
-        isothermalPvt_->initFromDeck(deck, eclState);
+        isothermalPvt_->initFromDeck(eclState);
 
         //////
         // initialize the thermal part
         //////
         const auto& tables = eclState.getTableManager();
 
-        enableThermalDensity_ = deck.hasKeyword("WATDENT");
-        enableThermalViscosity_ = deck.hasKeyword("VISCREF");
+        enableThermalDensity_ = !tables.getWatdentTable().empty();
+        enableThermalViscosity_ = tables.getViscrefTable().empty();
 
         unsigned numRegions = isothermalPvt_->numRegions();
         setNumRegions(numRegions);
 
         if (enableThermalDensity_) {
-            const auto& watdentKeyword = deck.getKeyword("WATDENT");
+            const auto& watdentKeyword = tables.getWatdentTable();
 
             assert(watdentKeyword.size() == numRegions);
             for (unsigned regionIdx = 0; regionIdx < numRegions; ++regionIdx) {
-                const auto& watdentRecord = watdentKeyword.getRecord(regionIdx);
+                const auto& watdentRecord = watdentKeyword[regionIdx];
 
-                watdentRefTemp_[regionIdx] = watdentRecord.getItem("REFERENCE_TEMPERATURE").getSIDouble(0);
-                watdentCT1_[regionIdx] = watdentRecord.getItem("EXPANSION_COEFF_LINEAR").getSIDouble(0);
-                watdentCT2_[regionIdx] = watdentRecord.getItem("EXPANSION_COEFF_QUADRATIC").getSIDouble(0);
+                watdentRefTemp_[regionIdx] = watdentRecord.reference_temperature;
+                watdentCT1_[regionIdx] = watdentRecord.first_coefficient;
+                watdentCT2_[regionIdx] = watdentRecord.second_coefficient;
             }
         }
 
         if (enableThermalViscosity_) {
-            const auto& viscrefKeyword = deck.getKeyword("VISCREF");
-
+            const auto& viscrefKeyword = tables.getViscrefTable();
             const auto& watvisctTables = tables.getWatvisctTables();
 
             assert(watvisctTables.size() == numRegions);
@@ -111,8 +108,8 @@ public:
                 const auto& mu = watvisctTables[regionIdx].getColumn("Viscosity").vectorCopy();
                 watvisctCurves_[regionIdx].setXYContainers(T, mu);
 
-                const auto& viscrefRecord = viscrefKeyword.getRecord(regionIdx);
-                viscrefPress_[regionIdx] = viscrefRecord.getItem("REFERENCE_PRESSURE").getSIDouble(0);
+                const auto& viscrefRecord = viscrefKeyword[regionIdx];
+                viscrefPress_[regionIdx] = viscrefRecord.reference_pressure;
             }
         }
     }
