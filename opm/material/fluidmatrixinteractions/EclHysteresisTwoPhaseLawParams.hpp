@@ -64,6 +64,7 @@ public:
 
         deltaSwImbKrn_ = 0.0;
         // deltaSwImbKrw_ = 0.0;
+        deltaSwImbPc_ = 0.0;
 
 #ifndef NDEBUG
         finalized_ = false;
@@ -235,6 +236,26 @@ public:
      */
     Scalar deltaSwImbKrn() const
     { return deltaSwImbKrn_; }
+
+    /*!
+     * \brief Sets the saturation value which must be added if the capillary pressure is
+     *        calculated using the imbibition curve.
+     *
+     * This means that p_cnw(Sw) = pc_cnw,drainage(Sw) if Sw < SwMdc and pcnw(Sw) =
+     * pcnw_imbibition(Sw + Sw_shift,pc) else
+     */
+    void setDeltaSwImbPc(Scalar value)
+    { deltaSwImbPc_ = value; }
+
+    /*!
+     * \brief Returns the saturation value which must be added if the capillary pressure is
+     *        calculated using the imbibition curve.
+     *
+     * This means that p_cnw(Sw) = pc_cnw,drainage(Sw) if Sw < SwMdc and pcnw(Sw) =
+     * pcnw_imbibition(Sw + Sw_shift,pc) else
+     */
+    Scalar deltaSwImbPc() const
+    { return deltaSwImbPc_; }
 
     /*!
      * \brief Notify the hysteresis law that a given wetting-phase saturation has been seen

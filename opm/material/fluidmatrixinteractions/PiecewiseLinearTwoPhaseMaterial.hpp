@@ -48,7 +48,9 @@ namespace Opm {
  * ECLIPSE reservoir simulator uses linear interpolation for capillary
  * pressure and relperm curves, we do the same.
  */
-template <class TraitsT, class ParamsT = PiecewiseLinearTwoPhaseMaterialParams<TraitsT> >
+template <class TraitsT,
+          class ParamsT = PiecewiseLinearTwoPhaseMaterialParams<TraitsT>,
+          bool useConstantExtrapolation = true>
 class PiecewiseLinearTwoPhaseMaterial : public TraitsT
 {
     typedef typename ParamsT::ValueVector ValueVector;
@@ -234,12 +236,23 @@ private:
     {
         typedef MathToolbox<Evaluation> Toolbox;
 
-        if (x <= xValues.front())
-            return yValues.front();
-        if (x >= xValues.back())
-            return yValues.back();
+        size_t segIdx;
+        if (x <= xValues.front()) {
+            if (useConstantExtrapolation)
+                return yValues.front();
 
-        size_t segIdx = findSegmentIndex_(xValues, Toolbox::scalarValue(x));
+            segIdx = 0;
+        }
+        else if (x >= xValues.back()) {
+            if (useConstantExtrapolation)
+                return yValues.back();
+
+            segIdx = xValues.size() - 2;
+        }
+        else
+            segIdx = findSegmentIndex_(xValues, Toolbox::scalarValue(x));
+
+        Valgrind::CheckDefined(segIdx);
 
         Scalar x0 = xValues[segIdx];
         Scalar x1 = xValues[segIdx + 1];
@@ -259,12 +272,23 @@ private:
     {
         typedef MathToolbox<Evaluation> Toolbox;
 
-        if (x >= xValues.front())
-            return yValues.front();
-        if (x <= xValues.back())
-            return yValues.back();
+        size_t segIdx;
+        if (x >= xValues.front()) {
+            if (useConstantExtrapolation)
+                return yValues.front();
 
-        size_t segIdx = findSegmentIndexDescending_(xValues, Toolbox::scalarValue(x));
+            segIdx = 0;
+        }
+        else if (x <= xValues.back()) {
+            if (useConstantExtrapolation)
+                return yValues.back();
+
+            segIdx = xValues.size() - 2;
+        }
+        else
+            segIdx = findSegmentIndex_(xValues, Toolbox::scalarValue(x));
+
+        Valgrind::CheckDefined(segIdx);
 
         Scalar x0 = xValues[segIdx];
         Scalar x1 = xValues[segIdx + 1];
