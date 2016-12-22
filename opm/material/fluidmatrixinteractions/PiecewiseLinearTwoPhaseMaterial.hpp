@@ -49,8 +49,7 @@ namespace Opm {
  * pressure and relperm curves, we do the same.
  */
 template <class TraitsT,
-          class ParamsT = PiecewiseLinearTwoPhaseMaterialParams<TraitsT>,
-          bool useConstantExtrapolation = true>
+          class ParamsT = PiecewiseLinearTwoPhaseMaterialParams<TraitsT> >
 class PiecewiseLinearTwoPhaseMaterial : public TraitsT
 {
     typedef typename ParamsT::ValueVector ValueVector;
@@ -145,11 +144,11 @@ public:
      */
     template <class Evaluation>
     static Evaluation twoPhaseSatPcnw(const Params &params, const Evaluation& Sw)
-    { return eval_(params.SwPcwnSamples(), params.pcnwSamples(), Sw); }
+    { return evalPc_(params.SwPcwnSamples(), params.pcnwSamples(), Sw); }
 
     template <class Evaluation>
     static Evaluation twoPhaseSatPcnwInv(const Params &params, const Evaluation& pcnw)
-    { return eval_(params.pcnwSamples(), params.SwPcwnSamples(), pcnw); }
+    { return evalPc_(params.pcnwSamples(), params.SwPcwnSamples(), pcnw); }
 
     /*!
      * \brief The saturation-capillary pressure curve
@@ -230,6 +229,16 @@ private:
     }
 
     template <class Evaluation>
+    static Evaluation evalPc_(const ValueVector &xValues,
+                              const ValueVector &yValues,
+                              const Evaluation& x)
+    {
+        if (xValues.front() < xValues.back())
+            return evalAscending_<Evaluation, /*constantExtrapolation=*/false>(xValues, yValues, x);
+        return evalDescending_<Evaluation, /*constantExtrapolation=*/false>(xValues, yValues, x);
+    }
+
+    template <class Evaluation, bool useConstantExtrapolation = true>
     static Evaluation evalAscending_(const ValueVector &xValues,
                                      const ValueVector &yValues,
                                      const Evaluation& x)
@@ -250,12 +259,17 @@ private:
             segIdx = xValues.size() - 2;
         }
         else
-            segIdx = findSegmentIndex_(xValues, Toolbox::scalarValue(x));
+            segIdx = findSegmentIndexAscending_(xValues, Toolbox::scalarValue(x));
 
         Valgrind::CheckDefined(segIdx);
 
         Scalar x0 = xValues[segIdx];
         Scalar x1 = xValues[segIdx + 1];
+
+        if (x0 == x1)
+            // since the the function seems to be constant within the segment, we just
+            // return the value of it to avoid a division by zero.
+            return yValues[segIdx];
 
         Scalar y0 = yValues[segIdx];
         Scalar y1 = yValues[segIdx + 1];
@@ -265,7 +279,7 @@ private:
         return y0 + (x - x0)*m;
     }
 
-    template <class Evaluation>
+    template <class Evaluation, bool useConstantExtrapolation = true>
     static Evaluation evalDescending_(const ValueVector &xValues,
                                       const ValueVector &yValues,
                                       const Evaluation& x)
@@ -286,12 +300,17 @@ private:
             segIdx = xValues.size() - 2;
         }
         else
-            segIdx = findSegmentIndex_(xValues, Toolbox::scalarValue(x));
+            segIdx = findSegmentIndexDescending_(xValues, Toolbox::scalarValue(x));
 
         Valgrind::CheckDefined(segIdx);
 
         Scalar x0 = xValues[segIdx];
         Scalar x1 = xValues[segIdx + 1];
+
+        if (x0 == x1)
+            // since the the function seems to be constant within the segment, we just
+            // return the value of it to avoid a division by zero.
+            return yValues[segIdx];
 
         Scalar y0 = yValues[segIdx];
         Scalar y1 = yValues[segIdx + 1];
@@ -301,30 +320,7 @@ private:
         return y0 + (x - x0)*m;
     }
 
-    template <class Evaluation>
-    static Evaluation evalDeriv_(const ValueVector &xValues,
-                                 const ValueVector &yValues,
-                                 const Evaluation& x)
-    {
-        typedef MathToolbox<Evaluation> Toolbox;
-
-        if (Toolbox::scalarValue(x) <= xValues.front())
-            return Toolbox::createConstant(0.0);
-        if (Toolbox::scalarValue(x) >= xValues.back())
-            return Toolbox::createConstant(0.0);
-
-        size_t segIdx = findSegmentIndex_(xValues, Toolbox::scalarValue(x));
-
-        Scalar x0 = xValues[segIdx];
-        Scalar x1 = xValues[segIdx + 1];
-
-        Scalar y0 = yValues[segIdx];
-        Scalar y1 = yValues[segIdx + 1];
-
-        return Toolbox::createConstant((y1 - y0)/(x1 - x0));
-    }
-
-    static size_t findSegmentIndex_(const ValueVector &xValues, Scalar x)
+    static size_t findSegmentIndexAscending_(const ValueVector &xValues, Scalar x)
     {
         assert(xValues.size() > 1); // we need at least two sampling points!
         size_t n = xValues.size() - 1;

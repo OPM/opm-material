@@ -148,10 +148,6 @@ public:
     template <class Evaluation>
     static Evaluation twoPhaseSatPcnw(const Params &params, const Evaluation& Sw)
     {
-#if 1
-        // TODO: capillary pressure hysteresis
-        return EffectiveLaw::twoPhaseSatPcnw(params.drainageParams(), Sw);
-#else
         if (!params.config().enableHysteresis() || params.config().pcHysteresisModel() < 0)
             return EffectiveLaw::twoPhaseSatPcnw(params.drainageParams(), Sw);
 
@@ -161,7 +157,6 @@ public:
         const Evaluation& SwEff = Sw + params.deltaSwImbPc();
 
         return EffectiveLaw::twoPhaseSatPcnw(params.imbibitionParams(), SwEff);
-#endif
     }
 
     /*!

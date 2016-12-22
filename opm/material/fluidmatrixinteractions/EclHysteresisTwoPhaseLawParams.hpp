@@ -312,8 +312,8 @@ private:
         Scalar SwPcMdcImbibition = EffLawT::twoPhaseSatPcnwInv(imbibitionParams(), pcMdcDrainage);
         deltaSwImbPc_ = SwPcMdcImbibition - pcSwMdc_;
 
-//        assert(std::abs(EffLawT::twoPhaseSatPcnw(imbibitionParams(), pcSwMdc_ + deltaSwImbPc_)
-//                        - EffLawT::twoPhaseSatPcnw(drainageParams(), pcSwMdc_)) < 1e-8);
+        assert(std::abs(EffLawT::twoPhaseSatPcnw(imbibitionParams(), pcSwMdc_ + deltaSwImbPc_)
+                        - EffLawT::twoPhaseSatPcnw(drainageParams(), pcSwMdc_)) < 1e-8);
         assert(std::abs(EffLawT::twoPhaseSatKrn(imbibitionParams(), krnSwMdc_ + deltaSwImbKrn_)
                         - EffLawT::twoPhaseSatKrn(drainageParams(), krnSwMdc_)) < 1e-8);
         assert(std::abs(EffLawT::twoPhaseSatKrw(imbibitionParams(), krwSwMdc_ + deltaSwImbKrw_)
