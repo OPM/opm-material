@@ -339,7 +339,7 @@ public:
         if (params.inconsistentHysteresisUpdate()) {
             Sg = std::min(Scalar(1.0), std::max(Scalar(0.0), Sg));
             // NOTE: the saturations which are passed to update the hysteresis curves are
-            // inconsistent with the ones used to calculate the relative permeabilities. We do
+            // inconsistent with the ones used to calculate the relative permabilities. We do
             // it like this anyway because (a) the saturation functions of opm-core do it
             // this way (b) the simulations seem to converge better (which is not too much
             // surprising actually, because the time step does not start on a kink in the

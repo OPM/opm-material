@@ -60,10 +60,10 @@ public:
     {
         pcSwMdc_ = 2.0;
         krnSwMdc_ = 2.0;
-        krwSwMdc_ = 2.0;
+        // krwSwMdc_ = 2.0;
 
         deltaSwImbKrn_ = 0.0;
-        deltaSwImbKrw_ = 0.0;
+        // deltaSwImbKrw_ = 0.0;
         deltaSwImbPc_ = 0.0;
 
 #ifndef NDEBUG
@@ -198,8 +198,9 @@ public:
      * This means that krw(Sw) = krw_drainage(Sw) if Sw < SwMdc and
      * krw(Sw) = krw_imbibition(Sw + Sw_shift,krw) else
      */
-    void setDeltaSwImbKrw(Scalar value)
-    { deltaSwImbKrw_ = value; }
+    void setDeltaSwImbKrw(Scalar /* value */)
+    {}
+    //    { deltaSwImbKrw_ = value; }
 
     /*!
      * \brief Returns the saturation value which must be added if krw is calculated using
@@ -209,7 +210,8 @@ public:
      * krw(Sw) = krw_imbibition(Sw + Sw_shift,krw) else
      */
     Scalar deltaSwImbKrw() const
-    { return deltaSwImbKrw_; }
+    { return 0.0; }
+//    { return deltaSwImbKrw_; }
 
     /*!
      * \brief Sets the saturation value which must be added if krn is calculated using
@@ -257,7 +259,7 @@ public:
      * This updates the scanning curves and the imbibition<->drainage reversal points as
      * appropriate.
      */
-    void update(Scalar pcSw, Scalar krwSw, Scalar krnSw)
+    void update(Scalar pcSw, Scalar /* krwSw */, Scalar krnSw)
     {
         bool updateParams = false;
         if (pcSw < pcSwMdc_) {
@@ -265,10 +267,18 @@ public:
             updateParams = true;
         }
 
-        if (krwSw < krwSwMdc_) {
+/*
+        // This is quite hacky: Eclipse says that it only uses relperm hysteresis for the
+        // wetting phase (indicated by '0' for the second item of the EHYSTER keyword),
+        // even though this makes about zero sense: one would expect that hysteresis can
+        // be limited to the oil phase, but the oil phase is the wetting phase of the
+        // gas-oil twophase system whilst it is non-wetting for water-oil.
+        if (krwSw < krwSwMdc_)
+        {
             krwSwMdc_ = krwSw;
             updateParams = true;
         }
+*/
 
         if (krnSw < krnSwMdc_) {
             krnSwMdc_ = krnSw;
@@ -293,10 +303,14 @@ private:
 
     void updateDynamicParams_()
     {
+        // HACK: Eclipse seems to disable the wetting-phase relperm even though this is
+        // quite pointless from the physical POV. (see comment above)
+/*
         // calculate the saturation deltas for the relative permeabilities
         Scalar krwMdcDrainage = EffLawT::twoPhaseSatKrw(drainageParams(), krwSwMdc_);
         Scalar SwKrwMdcImbibition = EffLawT::twoPhaseSatKrwInv(imbibitionParams(), krwMdcDrainage);
         deltaSwImbKrw_ = SwKrwMdcImbibition - krwSwMdc_;
+*/
 
         Scalar krnMdcDrainage = EffLawT::twoPhaseSatKrn(drainageParams(), krnSwMdc_);
         Scalar SwKrnMdcImbibition = EffLawT::twoPhaseSatKrnInv(imbibitionParams(), krnMdcDrainage);
@@ -312,6 +326,12 @@ private:
                         - EffLawT::twoPhaseSatKrn(drainageParams(), krnSwMdc_)) < 1e-8);
         assert(std::abs(EffLawT::twoPhaseSatKrw(imbibitionParams(), krwSwMdc_ + deltaSwImbKrw_)
                         - EffLawT::twoPhaseSatKrw(drainageParams(), krwSwMdc_)) < 1e-8);
+
+#if 0
+        Scalar Snhy = 1.0 - SwMdc_;
+
+        Sncrt_ = Sncrd_ + (Snhy - Sncrd_)/(1 + C_*(Snhy - Sncrd_));
+#endif
     }
 
     std::shared_ptr<EclHysteresisConfig> config_;
@@ -321,16 +341,32 @@ private:
     // largest wettinging phase saturation which is on the main-drainage curve. These are
     // three different values because the sourounding code can choose to use different
     // definitions for the saturations for different quantities
-    Scalar krwSwMdc_;
+//    Scalar krwSwMdc_;
     Scalar krnSwMdc_;
     Scalar pcSwMdc_;
 
     // offsets added to wetting phase saturation uf using the imbibition curves need to
     // be used to calculate the wetting phase relperm, the non-wetting phase relperm and
     // the capillary pressure
-    Scalar deltaSwImbKrw_;
+//    Scalar deltaSwImbKrw_;
     Scalar deltaSwImbKrn_;
     Scalar deltaSwImbPc_;
+
+    // trapped non-wetting phase saturation
+    //Scalar Sncrt_;
+
+    // the following uses the conventions of the Eclipse technical description:
+    //
+    // Sncrd_: critical non-wetting phase saturation for the drainage curve
+    // Sncri_: critical non-wetting phase saturation for the imbibition curve
+    // Snmaxd_: non-wetting phase saturation where the non-wetting relperm reaches its
+    //          maximum on the drainage curve
+    // C_: factor required to calculate the trapped non-wetting phase saturation using
+    //     the Killough approach
+    //Scalar Sncrd_;
+    //Scalar Sncri_;
+    //Scalar Snmaxd_;
+    //Scalar C_;
 };
 
 } // namespace Opm
