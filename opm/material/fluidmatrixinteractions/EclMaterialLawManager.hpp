@@ -189,6 +189,11 @@ public:
                 elemScaledEpsInfo.maxPcow *= pcow/pcowAtSw;
                 auto& elemEclEpsScalingPoints = oilWaterScaledEpsPointsDrainage(elemIdx);
                 elemEclEpsScalingPoints.init(elemScaledEpsInfo, *oilWaterEclEpsConfig_, Opm::EclOilWaterSystem);
+
+                if (enableHysteresis()) {
+                    auto& elemEclEpsScalingPointsImb = oilWaterScaledEpsPointsImbibition(elemIdx);
+                    elemEclEpsScalingPointsImb.init(elemScaledEpsInfo, *oilWaterEclEpsConfig_, Opm::EclOilWaterSystem);
+                }
             }
         }
 
@@ -252,6 +257,36 @@ public:
             auto& realParams = materialParams.template getRealParams<Opm::EclTwoPhaseApproach>();
             return realParams.oilWaterParams().drainageParams().scaledPoints();
         }
+
+        default:
+            OPM_THROW(std::logic_error, "Enum value for material approach unknown!");
+        }
+    }
+
+    EclEpsScalingPoints<Scalar>& oilWaterScaledEpsPointsImbibition(unsigned elemIdx)
+    {
+        auto& materialParams = *materialLawParams_[elemIdx];
+        switch (materialParams.approach()) {
+        case EclStone1Approach: {
+            auto& realParams = materialParams.template getRealParams<Opm::EclStone1Approach>();
+            return realParams.oilWaterParams().imbibitionParams().scaledPoints();
+        }
+
+        case EclStone2Approach: {
+            auto& realParams = materialParams.template getRealParams<Opm::EclStone2Approach>();
+            return realParams.oilWaterParams().imbibitionParams().scaledPoints();
+        }
+
+        case EclDefaultApproach: {
+            auto& realParams = materialParams.template getRealParams<Opm::EclDefaultApproach>();
+            return realParams.oilWaterParams().imbibitionParams().scaledPoints();
+        }
+
+        case EclTwoPhaseApproach: {
+            auto& realParams = materialParams.template getRealParams<Opm::EclTwoPhaseApproach>();
+            return realParams.oilWaterParams().imbibitionParams().scaledPoints();
+        }
+
         default:
             OPM_THROW(std::logic_error, "Enum value for material approach unknown!");
         }

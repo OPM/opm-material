@@ -29,9 +29,10 @@
 
 #include "PiecewiseLinearTwoPhaseMaterialParams.hpp"
 
+#include <opm/material/common/MathToolbox.hpp>
 #include <opm/common/ErrorMacros.hpp>
 #include <opm/common/Exceptions.hpp>
-#include <opm/material/common/MathToolbox.hpp>
+#include <opm/common/Valgrind.hpp>
 
 #include <algorithm>
 #include <cmath>
@@ -268,7 +269,7 @@ private:
 
         if (x0 == x1)
             // since the the function seems to be constant within the segment, we just
-            // return the value of it to avoid a division by zero.
+            // return the front value of it to avoid a division by zero.
             return yValues[segIdx];
 
         Scalar y0 = yValues[segIdx];
@@ -309,7 +310,7 @@ private:
 
         if (x0 == x1)
             // since the the function seems to be constant within the segment, we just
-            // return the value of it to avoid a division by zero.
+            // return the front value of it to avoid a division by zero.
             return yValues[segIdx];
 
         Scalar y0 = yValues[segIdx];

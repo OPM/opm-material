@@ -231,7 +231,6 @@ public:
     template <class Evaluation>
     static Evaluation twoPhaseSatKrw(const Params &params, const Evaluation& Sw)
     {
-
         // if no relperm hysteresis is enabled, use the drainage curve
         if (!params.config().enableHysteresis() || params.config().krHysteresisModel() < 0)
             return EffectiveLaw::twoPhaseSatKrw(params.drainageParams(), Sw);

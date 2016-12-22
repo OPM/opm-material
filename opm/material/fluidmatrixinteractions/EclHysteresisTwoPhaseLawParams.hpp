@@ -60,10 +60,10 @@ public:
     {
         pcSwMdc_ = 2.0;
         krnSwMdc_ = 2.0;
-        // krwSwMdc_ = 2.0;
+        krwSwMdc_ = 2.0;
 
         deltaSwImbKrn_ = 0.0;
-        // deltaSwImbKrw_ = 0.0;
+        deltaSwImbKrw_ = 0.0;
         deltaSwImbPc_ = 0.0;
 
 #ifndef NDEBUG
@@ -77,12 +77,6 @@ public:
      */
     void finalize()
     {
-        if (config().enableHysteresis()) {
-            //C_ = 1.0/(Sncri_ - Sncrd_) + 1.0/(Snmaxd_ - Sncrd_);
-
-            updateDynamicParams_();
-        }
-
 #ifndef NDEBUG
         finalized_ = true;
 #endif

@@ -497,7 +497,7 @@ private:
             return scaledPcnw*(params.config().deckPressureConversionFactor()/alpha);
         }
         else if (params.config().enablePcScaling()) {
-            Scalar alpha = params.unscaledPoints().maxPcnw()/params.scaledPoints().maxPcnw();
+            Scalar alpha = params.scaledPoints().maxPcnw()/params.unscaledPoints().maxPcnw();
             return scaledPcnw/alpha;
         }
 
