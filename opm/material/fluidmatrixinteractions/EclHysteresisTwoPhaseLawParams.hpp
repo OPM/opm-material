@@ -77,6 +77,12 @@ public:
      */
     void finalize()
     {
+        if (config().enableHysteresis()) {
+            //C_ = 1.0/(Sncri_ - Sncrd_) + 1.0/(Snmaxd_ - Sncrd_);
+
+            updateDynamicParams_();
+        }
+
 #ifndef NDEBUG
         finalized_ = true;
 #endif
@@ -324,8 +330,8 @@ private:
                         - EffLawT::twoPhaseSatPcnw(drainageParams(), pcSwMdc_)) < 1e-8);
         assert(std::abs(EffLawT::twoPhaseSatKrn(imbibitionParams(), krnSwMdc_ + deltaSwImbKrn_)
                         - EffLawT::twoPhaseSatKrn(drainageParams(), krnSwMdc_)) < 1e-8);
-        assert(std::abs(EffLawT::twoPhaseSatKrw(imbibitionParams(), krwSwMdc_ + deltaSwImbKrw_)
-                        - EffLawT::twoPhaseSatKrw(drainageParams(), krwSwMdc_)) < 1e-8);
+//        assert(std::abs(EffLawT::twoPhaseSatKrw(imbibitionParams(), krwSwMdc_ + deltaSwImbKrw_)
+//                        - EffLawT::twoPhaseSatKrw(drainageParams(), krwSwMdc_)) < 1e-8);
 
 #if 0
         Scalar Snhy = 1.0 - SwMdc_;

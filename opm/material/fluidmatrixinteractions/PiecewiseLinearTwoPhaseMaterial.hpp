@@ -49,8 +49,7 @@ namespace Opm {
  * ECLIPSE reservoir simulator uses linear interpolation for capillary
  * pressure and relperm curves, we do the same.
  */
-template <class TraitsT,
-          class ParamsT = PiecewiseLinearTwoPhaseMaterialParams<TraitsT> >
+template <class TraitsT, class ParamsT = PiecewiseLinearTwoPhaseMaterialParams<TraitsT> >
 class PiecewiseLinearTwoPhaseMaterial : public TraitsT
 {
     typedef typename ParamsT::ValueVector ValueVector;
@@ -268,8 +267,8 @@ private:
         Scalar x1 = xValues[segIdx + 1];
 
         if (x0 == x1)
-            // since the the function seems to be constant within the segment, we just
-            // return the front value of it to avoid a division by zero.
+            // since the the function seems to be discontinuous, we just return the front
+            // value of the segment to avoid a division by zero.
             return yValues[segIdx];
 
         Scalar y0 = yValues[segIdx];
@@ -309,8 +308,8 @@ private:
         Scalar x1 = xValues[segIdx + 1];
 
         if (x0 == x1)
-            // since the the function seems to be constant within the segment, we just
-            // return the front value of it to avoid a division by zero.
+            // since the the function seems to be discontinuous, we just return the front
+            // value of the segment to avoid a division by zero.
             return yValues[segIdx];
 
         Scalar y0 = yValues[segIdx];
