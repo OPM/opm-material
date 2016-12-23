@@ -129,11 +129,11 @@ private:
     // mentioned in the deck. (saves memory.)
     void retrieveGridPropertyData_(const DoubleData **data,
                                    const Opm::EclipseState& eclState,
-                                   const std::string& properyName)
+                                   const std::string& propertyName)
     {
         (*data) = 0;
-        if (eclState.get3DProperties().hasDeckDoubleGridProperty(properyName))
-            (*data) = &eclState.get3DProperties().getDoubleGridProperty(properyName).getData();
+        if (eclState.get3DProperties().hasDeckDoubleGridProperty(propertyName))
+            (*data) = &eclState.get3DProperties().getDoubleGridProperty(propertyName).getData();
     }
 #endif
 };
