@@ -141,7 +141,7 @@ public:
         for (unsigned satnumIdx = 0; satnumIdx < numSatRegions; ++satnumIdx)
             unscaledEpsInfo_[satnumIdx].extractUnscaled(deck, eclState, satnumIdx);
 
-        initParamsForElements_(deck, eclState, compressedToCartesianElemIdx, satnumRegionArray);
+        initParams_(deck, eclState, compressedToCartesianElemIdx, satnumRegionArray);
     }
 
     /*!
@@ -213,10 +213,22 @@ public:
         return *materialLawParams_[elemIdx];
     }
 
-    std::shared_ptr<MaterialLawParams>& materialLawParamsPointerReferenceHack(unsigned elemIdx)
+    MaterialLawParams& materialLawParamsWellConnection(unsigned elemIdx)
     {
         assert(0 <= elemIdx && elemIdx <  materialLawParams_.size());
-        return materialLawParams_[elemIdx];
+        return *materialLawParams_[elemIdx];
+    }
+
+    const MaterialLawParams& materialLawParamsWellConnection(unsigned int connectionIdx) const
+    {
+        assert(0 <= connectionIdx && connectionIdx <  materialLawParamsForWellConnections_.size());
+        return *materialLawParamsForWellConnections_[connectionIdx];
+    }
+
+    std::shared_ptr<MaterialLawParams>& materialLawParamsPointerReferenceHack(unsigned int connectionIdx)
+    {
+        assert(0 <= connectionIdx && connectionIdx <  materialLawParamsForWellConnections_.size());
+        return materialLawParamsForWellConnections_[connectionIdx];
     }
 
     template <class FluidState>
@@ -316,12 +328,12 @@ private:
         }
     }
 
-    void initParamsForElements_(const Deck& deck, const EclipseState& eclState,
-                                const std::vector<int>& compressedToCartesianElemIdx,
-                                const std::vector<int>& satnumRegionArray)
+    void initParams_(const Deck& deck, const EclipseState& eclState,
+                     const std::vector<int>& compressedToCartesianElemIdx,
+                     const std::vector<int>& satnumRegionArray)
     {
+
         const size_t numSatRegions = eclState.runspec().tabdims().getNumSatTables();
-        unsigned numCompressedElems = static_cast<unsigned>(compressedToCartesianElemIdx.size());
 
         // read the end point scaling configuration. this needs to be done only once per
         // deck.
@@ -346,8 +358,76 @@ private:
 
             // read the end point scaling info for the saturation region
             unscaledEpsInfo_[satnumIdx].extractUnscaled(deck, eclState, satnumIdx);
-
         }
+
+        EclEpsGridProperties epsGridProperties, epsImbGridProperties;
+        epsGridProperties.initFromDeck(deck, eclState, /*imbibition=*/false);
+        if (enableHysteresis())
+            epsImbGridProperties.initFromDeck(deck, eclState, /*imbibition=*/true);
+
+        initParamsForElements_(materialLawParams_, deck, eclState, compressedToCartesianElemIdx, satnumRegionArray,
+                               gasOilUnscaledPointsVector, oilWaterUnscaledPointsVector, gasOilEffectiveParamVector,oilWaterEffectiveParamVector,
+                               epsGridProperties, epsImbGridProperties );
+
+
+        // for well connections
+        std::vector<int> satnumRegionArrayConnections;
+        std::vector<int> compressedToCartesianElemIdxConnections;
+
+        const auto& schedule = eclState.getSchedule();
+        const auto& eclGrid = eclState.getInputGrid();
+
+        size_t timeStep = 0;
+        auto wells = schedule.getWells(timeStep); //need all wells ...
+        for (auto wellIter= wells.begin(); wellIter != wells.end(); ++wellIter) {
+            const auto* well = (*wellIter);
+            for(const auto& completion : well->getCompletions(timeStep)) { // ... and all connections!!!
+
+                int cartIdx = eclGrid.getGlobalIndex(completion.getI(), completion.getJ(), completion.getK());
+                compressedToCartesianElemIdxConnections.push_back(cartIdx);
+
+                int satnumId = completion.getSatTableId();
+                if (satnumId > 0)
+                    satnumRegionArrayConnections.push_back(satnumId);
+                else {
+                    int satnumIdFromCell = satnumRegionArray[eclGrid.activeIndex(cartIdx)];
+                    satnumRegionArrayConnections.push_back(satnumIdFromCell);
+                }
+            }
+        }
+        // TODO change satnum/imbnum in epsGridProperties or change in ->extractScaled(...) ?
+        EclEpsGridProperties epsConnectionsProperties = epsGridProperties;
+        EclEpsGridProperties epsImbConnectionsProperties = epsImbGridProperties;
+
+        initParamsForElements_(materialLawParamsForWellConnections_, deck, eclState, compressedToCartesianElemIdxConnections, satnumRegionArrayConnections,
+                               gasOilUnscaledPointsVector, oilWaterUnscaledPointsVector, gasOilEffectiveParamVector,oilWaterEffectiveParamVector,
+                               epsConnectionsProperties, epsImbConnectionsProperties );
+
+
+
+    }
+
+
+    void initParamsForElements_(std::vector<std::shared_ptr<MaterialLawParams> > materialLawParams,
+                                const Deck& deck, const EclipseState& eclState,
+                                const std::vector<int>& compressedToCartesianElemIdx,
+                                const std::vector<int>& satnumRegionArray,
+                                const GasOilScalingPointsVector& gasOilUnscaledPointsVector,
+                                const OilWaterScalingPointsVector& oilWaterUnscaledPointsVector,
+                                const GasOilEffectiveParamVector& gasOilEffectiveParamVector,
+                                const OilWaterEffectiveParamVector& oilWaterEffectiveParamVector,
+                                const EclEpsGridProperties& epsGridProperties,
+                                const EclEpsGridProperties& epsImbGridProperties)
+    {
+
+        // read the end point scaling configuration. this needs to be done only once per
+        // deck.
+        auto gasOilConfig = std::make_shared<Opm::EclEpsConfig>();
+        auto oilWaterConfig = std::make_shared<Opm::EclEpsConfig>();
+        gasOilConfig->initFromDeck(deck, eclState, Opm::EclGasOilSystem);
+        oilWaterConfig->initFromDeck(deck, eclState, Opm::EclOilWaterSystem);
+
+        unsigned numCompressedElems = static_cast<unsigned>(compressedToCartesianElemIdx.size());
 
         // read the scaled end point scaling parameters which are specific for each
         // element
@@ -368,10 +448,7 @@ private:
             oilWaterScaledImbPointsVector.resize(numCompressedElems);
         }
 
-        EclEpsGridProperties epsGridProperties, epsImbGridProperties;
-        epsGridProperties.initFromDeck(deck, eclState, /*imbibition=*/false);
-        if (enableHysteresis())
-            epsImbGridProperties.initFromDeck(deck, eclState, /*imbibition=*/true);
+
         for (unsigned elemIdx = 0; elemIdx < numCompressedElems; ++elemIdx) {
             unsigned cartElemIdx = static_cast<unsigned>(compressedToCartesianElemIdx[elemIdx]);
             readGasOilScaledPoints_(gasOilScaledInfoVector,
@@ -497,20 +574,20 @@ private:
         }
 
         // create the parameter objects for the three-phase law
-        materialLawParams_.resize(numCompressedElems);
+        materialLawParams.resize(numCompressedElems);
         for (unsigned elemIdx = 0; elemIdx < numCompressedElems; ++elemIdx) {
-            materialLawParams_[elemIdx] = std::make_shared<MaterialLawParams>();
+            materialLawParams[elemIdx] = std::make_shared<MaterialLawParams>();
             unsigned satnumIdx = static_cast<unsigned>(satnumRegionArray[elemIdx]);
 
             initThreePhaseParams_(deck,
                                   eclState,
-                                  *materialLawParams_[elemIdx],
+                                  *materialLawParams[elemIdx],
                                   satnumIdx,
                                   *oilWaterScaledEpsInfoDrainage_[elemIdx],
                                   oilWaterParams[elemIdx],
                                   gasOilParams[elemIdx]);
 
-            materialLawParams_[elemIdx]->finalize();
+            materialLawParams[elemIdx]->finalize();
         }
     }
 
@@ -884,6 +961,8 @@ private:
     enum EclTwoPhaseApproach twoPhaseApproach_;
 
     std::vector<std::shared_ptr<MaterialLawParams> > materialLawParams_;
+    std::vector<std::shared_ptr<MaterialLawParams> > materialLawParamsForWellConnections_;
+
 };
 } // namespace Opm
 
