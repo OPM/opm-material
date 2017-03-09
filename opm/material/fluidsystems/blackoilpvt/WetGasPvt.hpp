@@ -548,6 +548,14 @@ public:
 
         // use the tabulated saturation pressure function to get a pretty good initial value
         Evaluation pSat = saturationPressure_[regionIdx].eval(Rv, /*extrapolate=*/true);
+
+        if ( Opm::MathToolbox<Evaluation>::isnan(pSat) ) {
+            std::stringstream errlog;
+            errlog << "Find initial gas saturation pressure with NaN value for X_g^O = " << Rv;
+            OpmLog::problem("wetgas NaN initial saturationpressure", errlog.str());
+            OPM_THROW_NOLOG(NumericalProblem, errlog.str());
+        }
+
         const Evaluation& eps = pSat*1e-11;
 
         // Newton method to do the remaining work. If the initial
@@ -558,6 +566,14 @@ public:
             const Evaluation& fPrime = ((saturatedOilVaporizationFactor(regionIdx, temperature, pSat + eps) - Rv) - f)/eps;
 
             const Evaluation& delta = f/fPrime;
+
+            if ( Opm::MathToolbox<Evaluation>::isnan(delta) ) {
+                 std::stringstream errlog;
+                 errlog << "Obtain delta with NaN value for X_g^O = " << Rv << " in the " << i << "th iteration during finding saturation pressure iteratively";
+                 OpmLog::problem("wetgas NaN delta value", errlog.str());
+                 OPM_THROW_NOLOG(NumericalProblem, errlog.str());
+            }
+
             pSat -= delta;
 
             if (std::abs(Toolbox::scalarValue(delta)) < std::abs(Toolbox::scalarValue(pSat)) * 1e-10)
