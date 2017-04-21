@@ -30,10 +30,6 @@
 #include <opm/material/common/Tabulated1DFunction.hpp>
 
 #if HAVE_OPM_PARSER
-#include <opm/parser/eclipse/Deck/Deck.hpp>
-#include <opm/parser/eclipse/Deck/DeckKeyword.hpp>
-#include <opm/parser/eclipse/Deck/DeckRecord.hpp>
-#include <opm/parser/eclipse/Deck/DeckItem.hpp>
 #include <opm/parser/eclipse/EclipseState/EclipseState.hpp>
 #endif
 
@@ -56,10 +52,10 @@ public:
      * \brief Sets the pressure-dependent water viscosity and density
      *        using a table stemming from the Eclipse PVTW keyword.
      */
-    void initFromDeck(const Deck& deck, const EclipseState& /*eclState*/)
+    void initFromDeck(const EclipseState& es)
     {
-        const auto& pvtwKeyword = deck.getKeyword("PVTW");
-        const auto& densityKeyword = deck.getKeyword("DENSITY");
+        const auto& pvtwKeyword = es.getTableManager().getPvtwTable();
+        const auto& densityKeyword = es.getTableManager().getDensityTable();
 
         assert(pvtwKeyword.size() == densityKeyword.size());
 
@@ -67,22 +63,17 @@ public:
         setNumRegions(numRegions);
 
         for (unsigned regionIdx = 0; regionIdx < numRegions; ++ regionIdx) {
-            auto pvtwRecord = pvtwKeyword.getRecord(regionIdx);
-            auto densityRecord = densityKeyword.getRecord(regionIdx);
+            const auto& pvtwRecord = pvtwKeyword[regionIdx];
+            const auto& densityRecord = densityKeyword[regionIdx];
 
-            waterReferenceDensity_[regionIdx] =
-                densityRecord.getItem("WATER").getSIDouble(0);
+            waterReferenceDensity_[regionIdx] = densityRecord.water;
 
-            waterReferencePressure_[regionIdx] =
-                pvtwRecord.getItem("P_REF").getSIDouble(0);
+            waterReferencePressure_[regionIdx] = pvtwRecord.reference_pressure;
             waterReferenceFormationVolumeFactor_[regionIdx] =
-                pvtwRecord.getItem("WATER_VOL_FACTOR").getSIDouble(0);
-            waterCompressibility_[regionIdx] =
-                pvtwRecord.getItem("WATER_COMPRESSIBILITY").getSIDouble(0);
-            waterViscosity_[regionIdx] =
-                pvtwRecord.getItem("WATER_VISCOSITY").getSIDouble(0);
-            waterViscosibility_[regionIdx] =
-                pvtwRecord.getItem("WATER_VISCOSIBILITY").getSIDouble(0);
+                pvtwRecord.volume_factor;
+            waterCompressibility_[regionIdx] = pvtwRecord.compressibility;
+            waterViscosity_[regionIdx] = pvtwRecord.viscosity;
+            waterViscosibility_[regionIdx] = pvtwRecord.viscosibility;
         }
 
         initEnd();

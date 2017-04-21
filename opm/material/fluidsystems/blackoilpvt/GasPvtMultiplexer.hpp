@@ -32,10 +32,7 @@
 #include "GasPvtThermal.hpp"
 
 #if HAVE_OPM_PARSER
-#include <opm/parser/eclipse/Deck/Deck.hpp>
 #include <opm/parser/eclipse/EclipseState/EclipseState.hpp>
-#include <opm/parser/eclipse/Deck/DeckKeyword.hpp>
-#include <opm/parser/eclipse/Deck/DeckRecord.hpp>
 #endif
 
 namespace Opm {
@@ -115,22 +112,24 @@ public:
      *
      * This method assumes that the deck features valid DENSITY and PVDG keywords.
      */
-    void initFromDeck(const Deck& deck, const EclipseState& eclState)
+    void initFromDeck(const EclipseState& eclState)
     {
-        bool enableGas = deck.hasKeyword("GAS");
+        bool enableGas = eclState.runspec().phases().active( Phase::GAS );
         if (!enableGas)
             return;
 
+        const auto& tables = eclState.getTableManager();
+
         if (enableThermal
-            && (deck.hasKeyword("TREF")
-                || deck.hasKeyword("GASVISCT")))
+            && (!tables.get_refs_material().TREF.empty()
+                || tables.hasTables( "GASVISCT" )))
             setApproach(ThermalGasPvt);
-        else if (deck.hasKeyword("PVTG"))
+        else if (tables.hasTables("PVTG"))
             setApproach(WetGasPvt);
-        else if (deck.hasKeyword("PVDG"))
+        else if (tables.hasTables("PVDG"))
             setApproach(DryGasPvt);
 
-        OPM_GAS_PVT_MULTIPLEXER_CALL(pvtImpl.initFromDeck(deck, eclState));
+        OPM_GAS_PVT_MULTIPLEXER_CALL(pvtImpl.initFromDeck(eclState));
     }
 #endif // HAVE_OPM_PARSER
 

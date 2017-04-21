@@ -180,24 +180,24 @@ public:
      */
     static void initFromDeck(const Deck& deck, const EclipseState& eclState)
     {
-        auto densityKeyword = deck.getKeyword("DENSITY");
-        size_t numRegions = densityKeyword.size();
+        size_t numRegions = eclState.runspec().tabdims().getNumPVTTables();
         initBegin(numRegions);
 
         numActivePhases_ = 0;
         std::fill(&phaseIsActive_[0], &phaseIsActive_[numPhases], false);
 
-        if (deck.hasKeyword("OIL")) {
+        const auto& phases = eclState.runspec().phases();
+        if (phases.active(Phase::OIL)) {
             phaseIsActive_[oilPhaseIdx] = true;
             ++ numActivePhases_;
         }
 
-        if (deck.hasKeyword("GAS")) {
+        if (phases.active(Phase::GAS)) {
             phaseIsActive_[gasPhaseIdx] = true;
             ++ numActivePhases_;
         }
 
-        if (deck.hasKeyword("WATER")) {
+        if (phases.active(Phase::WATER)) {
             phaseIsActive_[waterPhaseIdx] = true;
             ++ numActivePhases_;
         }
@@ -205,31 +205,32 @@ public:
         // this fluidsystem only supports two or three phases
         assert(numActivePhases_ >= 2 && numActivePhases_ <= 3);
 
-        setEnableDissolvedGas(deck.hasKeyword("DISGAS"));
-        setEnableVaporizedOil(deck.hasKeyword("VAPOIL"));
+        setEnableDissolvedGas(eclState.cfg().simulation().hasDISGAS());
+        setEnableVaporizedOil(eclState.cfg().simulation().hasVAPOIL());
 
+        const auto& densities = eclState.getTableManager().getDensityTable();
         // set the reference densities of all PVT regions
         for (unsigned regionIdx = 0; regionIdx < numRegions; ++regionIdx) {
-            const auto& densityRecord = densityKeyword.getRecord(regionIdx);
-            setReferenceDensities(densityRecord.getItem("OIL").getSIDouble(0),
-                                  densityRecord.getItem("WATER").getSIDouble(0),
-                                  densityRecord.getItem("GAS").getSIDouble(0),
+            const auto& densityRecord = densities[regionIdx];
+            setReferenceDensities(densityRecord.oil,
+                                  densityRecord.water,
+                                  densityRecord.gas,
                                   regionIdx);
         }
 
         if (phaseIsActive(gasPhaseIdx)) {
             gasPvt_ = std::make_shared<GasPvt>();
-            gasPvt_->initFromDeck(deck, eclState);
+            gasPvt_->initFromDeck(eclState);
         }
 
         if (phaseIsActive(oilPhaseIdx)) {
             oilPvt_ = std::make_shared<OilPvt>();
-            oilPvt_->initFromDeck(deck, eclState);
+            oilPvt_->initFromDeck(eclState);
         }
 
         if (phaseIsActive(waterPhaseIdx)) {
             waterPvt_ = std::make_shared<WaterPvt>();
-            waterPvt_->initFromDeck(deck, eclState);
+            waterPvt_->initFromDeck(eclState);
         }
 
         initEnd();

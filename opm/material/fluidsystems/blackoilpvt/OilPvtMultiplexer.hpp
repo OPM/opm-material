@@ -121,24 +121,26 @@ public:
      *
      * This method assumes that the deck features valid DENSITY and PVTO/PVDO/PVCDO keywords.
      */
-    void initFromDeck(const Deck& deck, const EclipseState& eclState)
+    void initFromDeck(const EclipseState& eclState)
     {
-        bool enableOil = deck.hasKeyword("OIL");
+        bool enableOil = eclState.runspec().phases().active( Phase::OIL );
         if (!enableOil)
             return;
 
+        const auto& tables = eclState.getTableManager();
+
         if (enableThermal
-            && (deck.hasKeyword("THERMEX1")
-                || deck.hasKeyword("VISCREF")))
+            && (!tables.get_refs_material().THERMEX1.empty()
+                || !tables.getViscrefTable().empty()))
             setApproach(ThermalOilPvt);
-        else if (deck.hasKeyword("PVCDO"))
+        else if (!tables.getPvcdoTable().empty())
             setApproach(ConstantCompressibilityOilPvt);
-        else if (deck.hasKeyword("PVDO"))
+        else if (tables.hasTables("PVDO"))
             setApproach(DeadOilPvt);
-        else if (deck.hasKeyword("PVTO"))
+        else if (tables.hasTables("PVTO"))
             setApproach(LiveOilPvt);
 
-        OPM_OIL_PVT_MULTIPLEXER_CALL(pvtImpl.initFromDeck(deck, eclState));
+        OPM_OIL_PVT_MULTIPLEXER_CALL(pvtImpl.initFromDeck(eclState));
     }
 #endif // HAVE_OPM_PARSER
 

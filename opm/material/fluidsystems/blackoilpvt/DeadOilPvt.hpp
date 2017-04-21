@@ -53,10 +53,10 @@ public:
     /*!
      * \brief Initialize the oil parameters via the data specified by the PVDO ECL keyword.
      */
-    void initFromDeck(const Deck& deck, const EclipseState& eclState)
+    void initFromDeck(const EclipseState& eclState)
     {
         const auto& pvdoTables = eclState.getTableManager().getPvdoTables();
-        const auto& densityKeyword = deck.getKeyword("DENSITY");
+        const auto& densityKeyword = eclState.getTableManager().getDensityTable();
 
         assert(pvdoTables.size() == densityKeyword.size());
 
@@ -64,9 +64,9 @@ public:
         setNumRegions(numRegions);
 
         for (unsigned regionIdx = 0; regionIdx < numRegions; ++ regionIdx) {
-            Scalar rhoRefO = densityKeyword.getRecord(regionIdx).getItem("OIL").getSIDouble(0);
-            Scalar rhoRefG = densityKeyword.getRecord(regionIdx).getItem("GAS").getSIDouble(0);
-            Scalar rhoRefW = densityKeyword.getRecord(regionIdx).getItem("WATER").getSIDouble(0);
+            Scalar rhoRefO = densityKeyword[regionIdx].oil;
+            Scalar rhoRefG = densityKeyword[regionIdx].gas;
+            Scalar rhoRefW = densityKeyword[regionIdx].water;
 
             setReferenceDensities(regionIdx, rhoRefO, rhoRefG, rhoRefW);
 
