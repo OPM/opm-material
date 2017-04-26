@@ -5,8 +5,8 @@
 
 Module: opm-material
 Description: This module contains the thermodynamic framework used by OPM
-Version: 2017.04-rc1
-Label: 2017.04-rc1
+Version: 2017.04
+Label: 2017.04
 Maintainer: opm@opm-project.org
 MaintainerName: The Open Porous Media Project
 Url: http://opm-project.org
