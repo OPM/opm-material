@@ -279,9 +279,8 @@ public:
         beta2 -= j2;
 
         // evaluate the two function values for the same y value ...
-        Evaluation s1, s2;
-        s1 = valueAt(i, j1)*(1.0 - beta1) + valueAt(i, j1 + 1)*beta1;
-        s2 = valueAt(i + 1, j2)*(1.0 - beta2) + valueAt(i + 1, j2 + 1)*beta2;
+        const Evaluation& s1 = valueAt(i, j1)*(1.0 - beta1) + valueAt(i, j1 + 1)*beta1;
+        const Evaluation& s2 = valueAt(i + 1, j2)*(1.0 - beta2) + valueAt(i + 1, j2 + 1)*beta2;
 
         Valgrind::CheckDefined(s1);
         Valgrind::CheckDefined(s2);

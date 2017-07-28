@@ -270,7 +270,7 @@ public:
         Scalar y0 = yValues_[segIdx];
         Scalar y1 = yValues_[segIdx + 1];
 
-        return y0 + (y1 - y0)*(x - x0)/(x1 - x0);
+        return y0 + (y1 - y0)/(x1 - x0)*(x - x0);
     }
 
     /*!
