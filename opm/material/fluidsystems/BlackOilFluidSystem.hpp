@@ -203,6 +203,14 @@ public:
         assert(numActivePhases_ >= 2 && numActivePhases_ <= 3);
 
         setEnableDissolvedGas(deck.hasKeyword("DISGAS"));
+        setEnableRateLimmitedDissolvedGas(deck.hasKeyword("DRSDT"));
+        if(enableRateLimmitedDissolvedGas_){
+            const auto& drsdtkw = deck.getKeyword("DRSDT");
+            const auto& drsdt = drsdtkw.getRecord(0).getItem(0).getSIDouble(0);
+            //const Scalar drsdt = 0.0;
+            setRateLimmitDissolvedGas(drsdt);
+        }
+
         setEnableVaporizedOil(deck.hasKeyword("VAPOIL"));
 
         // set the reference densities of all PVT regions
@@ -245,6 +253,7 @@ public:
     {
         enableDissolvedGas_ = true;
         enableVaporizedOil_ = false;
+        enableRateLimmitedDissolvedGas_ = false;
 
         numActivePhases_ = numPhases;
         std::fill(&phaseIsActive_[0], &phaseIsActive_[numPhases], true);
@@ -263,6 +272,17 @@ public:
     static void setEnableDissolvedGas(bool yesno)
     { enableDissolvedGas_ = yesno; }
 
+    /*!
+     * \brief Specify whether the fluid system should consider has limitation of the
+     *        rate of dissolving gas into oil
+     *
+     * By default, dissolved gas is considered.
+     */
+    static void setEnableRateLimmitedDissolvedGas(bool yesno)
+    { enableRateLimmitedDissolvedGas_ = yesno; }
+
+    static void setRateLimmitDissolvedGas(const Scalar drsdt)
+    { rateLimmitDissolvedGas_ = drsdt; }
     /*!
      * \brief Specify whether the fluid system should consider that the oil component can
      *        dissolve in the gas phase
@@ -468,6 +488,9 @@ public:
     static bool enableDissolvedGas()
     { return enableDissolvedGas_; }
 
+    static bool enableRateLimmitedDissolvedGas()
+    { return enableRateLimmitedDissolvedGas_; }
+
     /*!
      * \brief Returns whether the fluid system should consider that the oil component can
      *        dissolve in the gas phase
@@ -476,6 +499,13 @@ public:
      */
     static bool enableVaporizedOil()
     { return enableVaporizedOil_; }
+    /*!
+     * \brief Returns the density of a fluid phase at surface pressure [kg/m^3]
+     *
+     * \copydoc Doxygen::phaseIdxParam
+     */
+    static Scalar rateLimmitDissolvedGas()
+    { return rateLimmitDissolvedGas_;}
 
     /*!
      * \brief Returns the density of a fluid phase at surface pressure [kg/m^3]
@@ -1194,12 +1224,14 @@ private:
     static std::shared_ptr<WaterPvt> waterPvt_;
 
     static bool enableDissolvedGas_;
+    static bool enableRateLimmitedDissolvedGas_;
     static bool enableVaporizedOil_;
 
     // HACK for GCC 4.4: the array size has to be specified using the literal value '3'
     // here, because GCC 4.4 seems to be unable to determine the number of phases from
     // the BlackOil fluid system in the attribute declaration below...
     static std::vector<std::array<Scalar, /*numPhases=*/3> > referenceDensity_;
+    static Scalar rateLimmitDissolvedGas_;
     static std::vector<std::array<Scalar, /*numComponents=*/3> > molarMass_;
 
     static bool isInitialized_;
@@ -1244,6 +1276,9 @@ template <class Scalar>
 bool BlackOil<Scalar>::enableDissolvedGas_;
 
 template <class Scalar>
+bool BlackOil<Scalar>::enableRateLimmitedDissolvedGas_;
+
+template <class Scalar>
 bool BlackOil<Scalar>::enableVaporizedOil_;
 
 template <class Scalar>
@@ -1257,6 +1292,9 @@ BlackOil<Scalar>::gasPvt_;
 template <class Scalar>
 std::shared_ptr<WaterPvtMultiplexer<Scalar> >
 BlackOil<Scalar>::waterPvt_;
+
+template <class Scalar>
+Scalar BlackOil<Scalar>::rateLimmitDissolvedGas_ = 0.0;
 
 template <class Scalar>
 std::vector<std::array<Scalar, 3> >
