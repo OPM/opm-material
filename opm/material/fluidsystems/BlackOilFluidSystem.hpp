@@ -218,12 +218,12 @@ public:
             //const Scalar drsdt = 0.0;
             setRateLimmitDissolvedGas(drsdt);
             RateLimmitCells celltype = All;
-//            if(drsdtkw.getRecord(0).getItem(0).hasValue(1)){
-//                auto& ctype = drsdtkw.getRecord(0).getItem(0).get(1);// seems get is to int
-//                if(ctype==1){
-//                    celltype = Free;
-//                }
-//            }
+            const auto i2 =  drsdtkw.getRecord(0).getItem(1).getTrimmedString(0);
+            if(i2=="ALL"){
+                celltype=All;
+            }else{
+                celltype=Free;
+            }
             setEnableRateLimmitedDissolvedGas(celltype);
         }
 
