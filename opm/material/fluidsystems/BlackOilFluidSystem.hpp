@@ -96,6 +96,15 @@ namespace FluidSystems {
  *
  * \tparam Scalar The type used for scalar floating point values
  */
+
+/*! Enum defining state of rate limmiting of dissolution to none, only with free phase or all
+ */
+enum RateLimmitCells {
+    None = 0,
+    Free = 1,
+    All  = 2
+};
+
 template <class Scalar>
 class BlackOil : public BaseFluidSystem<Scalar, BlackOil<Scalar> >
 {
@@ -203,12 +212,19 @@ public:
         assert(numActivePhases_ >= 2 && numActivePhases_ <= 3);
 
         setEnableDissolvedGas(deck.hasKeyword("DISGAS"));
-        setEnableRateLimmitedDissolvedGas(deck.hasKeyword("DRSDT"));
-        if(enableRateLimmitedDissolvedGas_){
+        if(deck.hasKeyword("DRSDT")){
             const auto& drsdtkw = deck.getKeyword("DRSDT");
             const auto& drsdt = drsdtkw.getRecord(0).getItem(0).getSIDouble(0);
             //const Scalar drsdt = 0.0;
             setRateLimmitDissolvedGas(drsdt);
+            RateLimmitCells celltype = All;
+//            if(drsdtkw.getRecord(0).getItem(0).hasValue(1)){
+//                auto& ctype = drsdtkw.getRecord(0).getItem(0).get(1);// seems get is to int
+//                if(ctype==1){
+//                    celltype = Free;
+//                }
+//            }
+            setEnableRateLimmitedDissolvedGas(celltype);
         }
 
         setEnableVaporizedOil(deck.hasKeyword("VAPOIL"));
@@ -253,7 +269,7 @@ public:
     {
         enableDissolvedGas_ = true;
         enableVaporizedOil_ = false;
-        enableRateLimmitedDissolvedGas_ = false;
+        enableRateLimmitedDissolvedGas_ = None;
 
         numActivePhases_ = numPhases;
         std::fill(&phaseIsActive_[0], &phaseIsActive_[numPhases], true);
@@ -272,13 +288,16 @@ public:
     static void setEnableDissolvedGas(bool yesno)
     { enableDissolvedGas_ = yesno; }
 
+
+
+
     /*!
      * \brief Specify whether the fluid system should consider has limitation of the
      *        rate of dissolving gas into oil
      *
      * By default, dissolved gas is considered.
      */
-    static void setEnableRateLimmitedDissolvedGas(bool yesno)
+    static void setEnableRateLimmitedDissolvedGas(RateLimmitCells yesno)
     { enableRateLimmitedDissolvedGas_ = yesno; }
 
     static void setRateLimmitDissolvedGas(const Scalar drsdt)
@@ -488,7 +507,7 @@ public:
     static bool enableDissolvedGas()
     { return enableDissolvedGas_; }
 
-    static bool enableRateLimmitedDissolvedGas()
+    static RateLimmitCells enableRateLimmitedDissolvedGas()
     { return enableRateLimmitedDissolvedGas_; }
 
     /*!
@@ -507,6 +526,20 @@ public:
     static Scalar rateLimmitDissolvedGas()
     { return rateLimmitDissolvedGas_;}
 
+    template<class LHS>
+    static LHS rateLimmitedUpdate(LHS So,Scalar So0,LHS RsSat,Scalar RsSat0,double dt){
+        auto drs_max=rateLimmitDissolvedGas()*dt;
+        if((So*RsSat-So0*RsSat0)>drs_max){
+            //auto dt = geTime(); NB!!!
+            RsSat = RsSat0*So0+drs_max;
+            if(So>0){
+                RsSat = RsSat/So;
+            }else{
+                RsSat=RsSat0;
+            }
+        }
+        return RsSat;
+    }
     /*!
      * \brief Returns the density of a fluid phase at surface pressure [kg/m^3]
      *
@@ -1164,6 +1197,8 @@ public:
         return xgO*MO / (xgO*(MO - MG) + MG);
     }
 
+
+
     /*!
      * \brief Return a reference to the low-level object which calculates the gas phase
      *        quantities.
@@ -1224,7 +1259,7 @@ private:
     static std::shared_ptr<WaterPvt> waterPvt_;
 
     static bool enableDissolvedGas_;
-    static bool enableRateLimmitedDissolvedGas_;
+    static RateLimmitCells enableRateLimmitedDissolvedGas_;
     static bool enableVaporizedOil_;
 
     // HACK for GCC 4.4: the array size has to be specified using the literal value '3'
@@ -1276,7 +1311,7 @@ template <class Scalar>
 bool BlackOil<Scalar>::enableDissolvedGas_;
 
 template <class Scalar>
-bool BlackOil<Scalar>::enableRateLimmitedDissolvedGas_;
+RateLimmitCells BlackOil<Scalar>::enableRateLimmitedDissolvedGas_ = None;
 
 template <class Scalar>
 bool BlackOil<Scalar>::enableVaporizedOil_;
