@@ -529,15 +529,21 @@ public:
     template<class LHS>
     static LHS rateLimmitedUpdate(LHS So,Scalar So0,LHS RsSat,Scalar RsSat0,double dt){
         auto drs_max=rateLimmitDissolvedGas()*dt;
-        if((So*RsSat-So0*RsSat0)>drs_max){
-            //auto dt = geTime(); NB!!!
-            RsSat = RsSat0*So0+drs_max;
-            if(So>0){
-                RsSat = RsSat/So;
-            }else{
-                RsSat=RsSat0;
+        auto So_tmp = So0;// we do this explicitely to avoid high derivatives.
+        if(So0>1e-8){
+            if((RsSat-RsSat0)>drs_max/So0){
+                RsSat = RsSat0 + drs_max/So0;
             }
         }
+//        if((So_tmp*RsSat-So0*RsSat0)>drs_max){
+//            //auto dt = geTime(); NB!!!
+//            RsSat = RsSat0*So0+drs_max;
+//            if(So_tmp>0.001){
+//                RsSat = RsSat/So_tmp;
+//            }else{
+//                RsSat=RsSat0;
+//            }
+//        }
         return RsSat;
     }
     /*!
