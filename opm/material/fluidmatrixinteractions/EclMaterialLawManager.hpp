@@ -160,11 +160,14 @@ public:
         auto& elemScaledEpsInfo = *oilWaterScaledEpsInfoDrainage_[elemIdx];
 
         // TODO: Mixed wettability systems - see ecl kw OPTIONS switch 74
-        if (Sw <= elemScaledEpsInfo.Swl)
-            Sw = elemScaledEpsInfo.Swl;
-        else if (pcow < 0.0)
+
+        if (pcow < 0.0)
             Sw = elemScaledEpsInfo.Swu;
         else {
+
+            if (Sw <= elemScaledEpsInfo.Swl)
+                Sw = elemScaledEpsInfo.Swl;
+
             // specify a fluid state which only stores the saturations
             typedef Opm::SimpleModularFluidState<Scalar,
                                                  numPhases,
@@ -680,11 +683,16 @@ private:
         if (!hasGas) {
             // oil-water case
             family1 = !swofTables.empty();
-            family2 = !swfnTables.empty() && !sof3Tables.empty();
+            if (!family1)
+                throw std::runtime_error("only SWOF is supporeted for oil-water two-phase simulations");
+            //family2 = !swfnTables.empty() && !sof2Tables.empty();
         }
         else if (!hasWater) {
             // oil-gas case
-            throw std::runtime_error("oil-gas two-phase simulations are currently not supported");
+            family1 = !sgofTables.empty();
+            if (!family1)
+                throw std::runtime_error("only SGOF is supporeted for oil-gas two-phase simulations");
+            //family2 = !sgfnTables.empty() && !sof2Tables.empty();
         }
         else if (!hasOil) {
             // water-gas case
