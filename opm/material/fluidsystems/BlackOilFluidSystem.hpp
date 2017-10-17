@@ -529,12 +529,18 @@ public:
     template<class LHS>
     static LHS rateLimmitedUpdate(LHS So,Scalar So0,LHS RsSat,Scalar RsSat0,double dt){
         auto drs_max=rateLimmitDissolvedGas()*dt;
-        auto So_tmp = So0;// we do this explicitely to avoid high derivatives.
-        if(So0>1e-8){
-            if((RsSat-RsSat0)>drs_max/So0){
-                RsSat = RsSat0 + drs_max/So0;
-            }
+        //auto So_tmp = So0;// we do this explicitely to avoid high derivatives.
+
+        if((RsSat-RsSat0) >= drs_max){
+            RsSat = RsSat0 + drs_max;
         }
+
+//        auto So_tmp = So0;// we do this explicitely to avoid high derivatives.
+//        if(So0>1e-8){
+ //           if((RsSat-RsSat0)>drs_max/So0){
+ //               RsSat = RsSat0 + drs_max/So0;
+ //           }
+ //       }
 //        if((So_tmp*RsSat-So0*RsSat0)>drs_max){
 //            //auto dt = geTime(); NB!!!
 //            RsSat = RsSat0*So0+drs_max;
@@ -939,7 +945,7 @@ public:
         switch (phaseIdx) {
         case oilPhaseIdx: {
             if (enableDissolvedGas()) {
-                if (fluidState.phaseIsPresent(gasPhaseIdx)) {
+                if ( fluidState.phaseIsPresent(gasPhaseIdx) && !(ThisType::enableRateLimmitedDissolvedGas()) ) {
                     if (fluidState.saturation(gasPhaseIdx) < 1e-4) {
                         // here comes the relatively expensive case: first calculate and then
                         // interpolate between the saturated and undersaturated quantities to
