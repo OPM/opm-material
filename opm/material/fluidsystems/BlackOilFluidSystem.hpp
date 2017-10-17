@@ -719,7 +719,8 @@ public:
         switch (phaseIdx) {
         case oilPhaseIdx: {
             if (enableDissolvedGas()) {
-                if (fluidState.phaseIsPresent(gasPhaseIdx)) {
+                //if (fluidState.phaseIsPresent(gasPhaseIdx) && FluidSystem::enableRateLimmitedDissolvedGas()) {
+                if (fluidState.phaseIsPresent(gasPhaseIdx) && !(ThisType::enableRateLimmitedDissolvedGas())) {
                     if (fluidState.saturation(gasPhaseIdx) < 1e-4) {
                         // here comes the relatively expensive case: first calculate and then
                         // interpolate between the saturated and undersaturated quantities to
