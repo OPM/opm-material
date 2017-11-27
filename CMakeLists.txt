@@ -1,98 +1,83 @@
-# -*- mode: cmake; tab-width: 2; indent-tabs-mode: nil; truncate-lines: t; compile-command: "cmake -Wdev" -*-
+# -*- mode: cmake; tab-width: 2; indent-tabs-mode: t; truncate-lines: t
 # vim: set filetype=cmake autoindent tabstop=2 shiftwidth=2 noexpandtab softtabstop=2 nowrap:
 
-###########################################################################
-#                                                                         #
-# Note: The bulk of the build system is located in the cmake/ directory.  #
-#       This file only contains the specializations for this particular   #
-#       project. Most likely you are interested in editing one of these   #
-#       files instead:                                                    #
-#                                                                         #
-#       dune.module                              Name and version number  #
-#       CMakeLists_files.cmake                   Path of source files     #
-#       cmake/Modules/${project}-prereqs.cmake   Dependencies             #
-#                                                                         #
-###########################################################################
+# set up project and specify the minimum cmake version
+project("opm-material" C CXX)
 
-# Mandatory call to project
-project(opm-material CXX)
+cmake_minimum_required(VERSION 3.0)
 
-cmake_minimum_required (VERSION 2.8)
-
+# Sibling build
 option(SIBLING_SEARCH "Search for other modules in sibling directories?" ON)
-
-if(SIBLING_SEARCH AND NOT opm-common_DIR)
+if(SIBLING_SEARCH)
   # guess the sibling dir
   get_filename_component(_leaf_dir_name ${PROJECT_BINARY_DIR} NAME)
   get_filename_component(_parent_full_dir ${PROJECT_BINARY_DIR} DIRECTORY)
   get_filename_component(_parent_dir_name ${_parent_full_dir} NAME)
-  #Try if <module-name>/<build-dir> is used
   get_filename_component(_modules_dir ${_parent_full_dir} DIRECTORY)
-  if(IS_DIRECTORY ${_modules_dir}/opm-common/${_leaf_dir_name})
-    set(opm-common_DIR ${_modules_dir}/opm-common/${_leaf_dir_name})
-  else()
-    string(REPLACE ${PROJECT_NAME} opm-common _opm_common_leaf ${_leaf_dir_name})
-    if(NOT _leaf_dir_name STREQUAL _opm_common_leaf
-        AND IS_DIRECTORY ${_parent_full_dir}/${_opm_common_leaf})
-      # We are using build directories named <prefix><module-name><postfix>
-      set(opm-common_DIR ${_parent_full_dir}/${_opm_common_leaf})
-    elseif(IS_DIRECTORY ${_parent_full_dir}/opm-common)
-      # All modules are in a common build dir
-      set(opm-common_DIR "${_parent_full_dir}/opm-common}")
+  foreach(MOD dune-common opm-common libecl opm-parser)
+    # do not overwrite the location of a module if it was explicitly
+    # specified by the user
+    if(${MOD}_DIR)
+      continue()
     endif()
-  endif()
+
+
+    # Try various possible locations for the build directory of the dependency
+    foreach(BUILD_DIR "${_leaf_dir_name}" "build-cmake" "build" "../${MOD}-build" "../build-${MOD}" "../build" ".")
+      if(EXISTS "${_modules_dir}/${MOD}/${BUILD_DIR}/${MOD}-config.cmake")
+        set(${MOD}_DIR ${_modules_dir}/${MOD}/${BUILD_DIR})
+        break()
+      endif()
+    endforeach()
+  endforeach()
+endif()
+
+if(dune-common_DIR AND NOT IS_DIRECTORY ${dune-common_DIR})
+  message(WARNING "Value ${dune-common_DIR} passed to variable"
+    " dune-common_DIR is not a directory")
 endif()
 if(opm-common_DIR AND NOT IS_DIRECTORY ${opm-common_DIR})
   message(WARNING "Value ${opm-common_DIR} passed to variable"
     " opm-common_DIR is not a directory")
 endif()
 
-find_package(opm-common REQUIRED)
+# Set CMP0053 (how to handle escape sequences in strings) to the new
+# behavior to avoid a pretty annoying cmake warning if a library is
+# defined in the toplevel CMakeLists.txt. This should probably be
+# considered to be a bug in the dune build system. Note that the old
+# behaviour will most likely also work fine, but the result of setting
+# this policy to NEW is most likely what's intended.
+if (POLICY CMP0053)
+  cmake_policy(SET CMP0053 NEW)
+endif()
 
-include(OpmInit)
+# find the build system (i.e., dune-common) and set cmake's module path
+find_package(dune-common REQUIRED)
+list(APPEND CMAKE_MODULE_PATH ${dune-common_MODULE_PATH})
 
-# not the same location as most of the other projects; this hook overrides
-macro (dir_hook)
-endmacro (dir_hook)
+# include the dune macros
+include(DuneMacros)
 
-# project information is in dune.module. Read this file and set variables.
-# we cannot generate dune.module since it is read by dunecontrol before
-# the build starts, so it makes sense to keep the data there then.
-include (OpmInit)
+# start a dune project with information from dune.module
+dune_project()
 
-# list of prerequisites for this particular project; this is in a
-# separate file (in cmake/Modules sub-directory) because it is shared
-# with the find module
-include (${project}-prereqs)
+# include the additional generic OPM cmake macros
+include(OpmMacros)
 
-# read the list of components from this file (in the project directory);
-# it should set various lists with the names of the files to include
-include (CMakeLists_files.cmake)
+# recursively mark all header files beneath the "opm" directory for
+# installation.
+opm_recusive_export_all_headers("opm")
 
-macro (config_hook)
-opm_need_version_of ("dune-common")
-endmacro (config_hook)
+# the cmake modules get a special treatment
+opm_export_cmake_modules()
 
-macro (prereqs_hook)
-endmacro (prereqs_hook)
+# we want all features detected by the build system to be enabled,
+# thank you!
+dune_enable_all_packages()
 
-macro (sources_hook)
-endmacro (sources_hook)
-
-macro (fortran_hook)
-endmacro (fortran_hook)
-
-macro (files_hook)
-endmacro (files_hook)
-
-macro (tests_hook)
-endmacro (tests_hook)
-
-# all setup common to the OPM library modules is done here
-include (OpmLibMain)
-
-opm_add_test(test_eclblackoilpvt CONDITION OPM_PARSER_FOUND)
-opm_add_test(test_eclmateriallawmanager CONDITION OPM_PARSER_FOUND)
+# add all unit tests
+opm_add_test(test_eclblackoilpvt CONDITION opm-parser_FOUND)
+opm_add_test(test_eclmateriallawmanager CONDITION opm-parser_FOUND)
 opm_add_test(test_fluidmatrixinteractions)
 opm_add_test(test_pengrobinson)
 opm_add_test(test_densead)
@@ -103,3 +88,6 @@ opm_add_test(test_2dtables)
 opm_add_test(test_components)
 opm_add_test(test_fluidsystems)
 opm_add_test(test_immiscibleflash)
+
+# finalize the dune project, e.g. generating config.h etc.
+finalize_dune_project(GENERATE_CONFIG_H_CMAKE)
