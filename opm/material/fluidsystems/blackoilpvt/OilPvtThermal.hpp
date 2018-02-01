@@ -62,7 +62,7 @@ public:
     {
         enableThermalDensity_ = false;
         enableThermalViscosity_ = false;
-        enableInternalEnergy_ = false;
+        enableEnthalpy_ = false;
     }
 
     ~OilPvtThermal()
@@ -88,7 +88,7 @@ public:
 
         enableThermalDensity_ = deck.hasKeyword("OILDENT");
         enableThermalViscosity_ = deck.hasKeyword("VISCREF");
-        enableInternalEnergy_ = deck.hasKeyword("SPECHEAT");
+        enableEnthalpy_ = deck.hasKeyword("SPECHEAT");
 
         unsigned numRegions = isothermalPvt_->numRegions();
         setNumRegions(numRegions);
@@ -139,35 +139,35 @@ public:
         }
 
         if (deck.hasKeyword("SPECHEAT")) {
-            // the specific internal energy of liquid oil. be aware that ecl only specifies the
+            // the specific enthalpy of liquid oil. be aware that ecl only specifies the
             // heat capacity (via the SPECHEAT keyword) and we need to integrate it
-            // ourselfs to get the internal energy
+            // ourselfs to get the enthalpy
             for (unsigned regionIdx = 0; regionIdx < numRegions; ++regionIdx) {
                 const auto& specheatTable = tables.getSpecheatTables()[regionIdx];
                 const auto& temperatureColumn = specheatTable.getColumn("TEMPERATURE");
-                const auto& cvOilColumn = specheatTable.getColumn("CV_OIL");
+                const auto& cpOilColumn = specheatTable.getColumn("CP_OIL");
 
-                std::vector<double> uSamples(temperatureColumn.size());
+                std::vector<double> hSamples(temperatureColumn.size());
 
-                Scalar u = temperatureColumn[0]*cvOilColumn[0];
+                Scalar h = temperatureColumn[0]*cpOilColumn[0];
                 for (size_t i = 0;; ++i) {
-                    uSamples[i] = u;
+                    hSamples[i] = h;
 
                     if (i >= temperatureColumn.size() - 1)
                         break;
 
                     // integrate to the heat capacity from the current sampling point to the next
                     // one. this leads to a quadratic polynomial.
-                    Scalar h0 = cvOilColumn[i];
-                    Scalar h1 = cvOilColumn[i + 1];
+                    Scalar h0 = cpOilColumn[i];
+                    Scalar h1 = cpOilColumn[i + 1];
                     Scalar T0 = temperatureColumn[i];
                     Scalar T1 = temperatureColumn[i + 1];
                     Scalar m = (h1 - h0)/(T1 - T0);
-                    Scalar deltaU = 0.5*m*(T1*T1 - T0*T0) + h0*(T1 - T0);
-                    u += deltaU;
+                    Scalar deltaH = 0.5*m*(T1*T1 - T0*T0) + h0*(T1 - T0);
+                    h += deltaH;
                 }
 
-                internalEnergyCurves_[regionIdx].setXYContainers(temperatureColumn.vectorCopy(), uSamples);
+                enthalpyCurves_[regionIdx].setXYContainers(temperatureColumn.vectorCopy(), hSamples);
             }
         }
     }
@@ -182,7 +182,7 @@ public:
         viscrefPress_.resize(numRegions);
         viscrefRs_.resize(numRegions);
         viscRef_.resize(numRegions);
-        internalEnergyCurves_.resize(numRegions);
+        enthalpyCurves_.resize(numRegions);
     }
 
     /*!
@@ -207,22 +207,22 @@ public:
     { return viscrefRs_.size(); }
 
     /*!
-     * \brief Returns the specific internal energy [J/kg] of oil given a set of parameters.
+     * \brief Returns the specific enthalpy [J/kg] of oil given a set of parameters.
      */
     template <class Evaluation>
-    Evaluation internalEnergy(unsigned regionIdx,
-                              const Evaluation& temperature,
-                              const Evaluation& pressure OPM_UNUSED,
-                              const Evaluation& Rs OPM_UNUSED) const
+    Evaluation enthalpy(unsigned regionIdx,
+                        const Evaluation& temperature,
+                        const Evaluation& pressure OPM_UNUSED,
+                        const Evaluation& Rs OPM_UNUSED) const
     {
-        if (!enableInternalEnergy_)
+        if (!enableEnthalpy_)
             OPM_THROW(std::runtime_error,
-                      "Requested the internal energy of oil but it is disabled");
+                      "Requested the enthalpy of oil but it is disabled");
 
-        // compute the specific internal energy for the specified tempature. We use linear
+        // compute the specific enthalpy for the specified tempature. We use linear
         // interpolation here despite the fact that the underlying heat capacities are
         // piecewise linear (which leads to a quadratic function)
-        return internalEnergyCurves_[regionIdx].eval(temperature, /*extrapolate=*/true);
+        return enthalpyCurves_[regionIdx].eval(temperature, /*extrapolate=*/true);
     }
 
     /*!
@@ -366,12 +366,12 @@ private:
     std::vector<Scalar> oildentCT1_;
     std::vector<Scalar> oildentCT2_;
 
-    // piecewise linear curve representing the internal energy of oil
-    std::vector<TabulatedOneDFunction> internalEnergyCurves_;
+    // piecewise linear curve representing the enthalpy of oil
+    std::vector<TabulatedOneDFunction> enthalpyCurves_;
 
     bool enableThermalDensity_;
     bool enableThermalViscosity_;
-    bool enableInternalEnergy_;
+    bool enableEnthalpy_;
 };
 
 } // namespace Opm

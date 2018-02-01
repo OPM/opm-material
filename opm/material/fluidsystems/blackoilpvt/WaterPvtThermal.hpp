@@ -62,7 +62,7 @@ public:
     {
         enableThermalDensity_ = false;
         enableThermalViscosity_ = false;
-        enableInternalEnergy_ = false;
+        enableEnthalpy_ = false;
     }
 
     ~WaterPvtThermal()
@@ -88,7 +88,7 @@ public:
 
         enableThermalDensity_ = deck.hasKeyword("WATDENT");
         enableThermalViscosity_ = deck.hasKeyword("VISCREF");
-        enableInternalEnergy_ = deck.hasKeyword("SPECHEAT");
+        enableEnthalpy_ = deck.hasKeyword("SPECHEAT");
 
         unsigned numRegions = isothermalPvt_->numRegions();
         setNumRegions(numRegions);
@@ -125,35 +125,35 @@ public:
         }
 
         if (deck.hasKeyword("SPECHEAT")) {
-            // the specific internal energy of liquid water. be aware that ecl only specifies the heat capacity
+            // the specific enthalpy of liquid water. be aware that ecl only specifies the heat capacity
             // (via the SPECHEAT keyword) and we need to integrate it ourselfs to get the
-            // internal energy
+            // enthalpy
             for (unsigned regionIdx = 0; regionIdx < numRegions; ++regionIdx) {
                 const auto& specHeatTable = tables.getSpecheatTables()[regionIdx];
                 const auto& temperatureColumn = specHeatTable.getColumn("TEMPERATURE");
-                const auto& cvWaterColumn = specHeatTable.getColumn("CV_WATER");
+                const auto& cpWaterColumn = specHeatTable.getColumn("CP_WATER");
 
-                std::vector<double> uSamples(temperatureColumn.size());
+                std::vector<double> hSamples(temperatureColumn.size());
 
-                Scalar u = temperatureColumn[0]*cvWaterColumn[0];
+                Scalar h = temperatureColumn[0]*cpWaterColumn[0];
                 for (size_t i = 0;; ++i) {
-                    uSamples[i] = u;
+                    hSamples[i] = h;
 
                     if (i >= temperatureColumn.size() - 1)
                         break;
 
                     // integrate to the heat capacity from the current sampling point to the next
                     // one. this leads to a quadratic polynomial.
-                    Scalar h0 = cvWaterColumn[i];
-                    Scalar h1 = cvWaterColumn[i + 1];
+                    Scalar h0 = cpWaterColumn[i];
+                    Scalar h1 = cpWaterColumn[i + 1];
                     Scalar T0 = temperatureColumn[i];
                     Scalar T1 = temperatureColumn[i + 1];
                     Scalar m = (h1 - h0)/(T1 - T0);
-                    Scalar deltaU = 0.5*m*(T1*T1 - T0*T0) + h0*(T1 - T0);
-                    u += deltaU;
+                    Scalar deltaH = 0.5*m*(T1*T1 - T0*T0) + h0*(T1 - T0);
+                    h += deltaH;
                 }
 
-                internalEnergyCurves_[regionIdx].setXYContainers(temperatureColumn.vectorCopy(), uSamples);
+                enthalpyCurves_[regionIdx].setXYContainers(temperatureColumn.vectorCopy(), hSamples);
             }
         }
     }
@@ -174,7 +174,7 @@ public:
         watdentRefTemp_.resize(numRegions);
         watdentCT1_.resize(numRegions);
         watdentCT2_.resize(numRegions);
-        internalEnergyCurves_.resize(numRegions);
+        enthalpyCurves_.resize(numRegions);
     }
 
     /*!
@@ -198,22 +198,22 @@ public:
     size_t numRegions() const
     { return pvtwRefPress_.size(); }
 
-    /*!
-     * \brief Returns the specific internal energy [J/kg] of water given a set of parameters.
+        /*!
+     * \brief Returns the specific enthalpy [J/kg] of water given a set of parameters.
      */
     template <class Evaluation>
-    Evaluation internalEnergy(unsigned regionIdx,
-                              const Evaluation& temperature,
-                              const Evaluation& pressure OPM_UNUSED) const
+    Evaluation enthalpy(unsigned regionIdx,
+                        const Evaluation& temperature,
+                        const Evaluation& pressure OPM_UNUSED) const
     {
-        if (!enableInternalEnergy_)
+        if (!enableEnthalpy_)
             OPM_THROW(std::runtime_error,
-                      "Requested the internal energy of oil but it is disabled");
+                      "Requested the enthalpy of oil but it is disabled");
 
-        // compute the specific internal energy for the specified tempature. We use linear
+        // compute the specific enthalpy for the specified tempature. We use linear
         // interpolation here despite the fact that the underlying heat capacities are
         // piecewise linear (which leads to a quadratic function)
-        return internalEnergyCurves_[regionIdx].eval(temperature, /*extrapolate=*/true);
+        return enthalpyCurves_[regionIdx].eval(temperature, /*extrapolate=*/true);
     }
 
     /*!
@@ -279,12 +279,12 @@ private:
 
     std::vector<TabulatedOneDFunction> watvisctCurves_;
 
-    // piecewise linear curve representing the internal energy of water
-    std::vector<TabulatedOneDFunction> internalEnergyCurves_;
+    // piecewise linear curve representing the enthalpy of water
+    std::vector<TabulatedOneDFunction> enthalpyCurves_;
 
     bool enableThermalDensity_;
     bool enableThermalViscosity_;
-    bool enableInternalEnergy_;
+    bool enableEnthalpy_;
 };
 
 } // namespace Opm
