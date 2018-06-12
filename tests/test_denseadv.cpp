@@ -589,7 +589,7 @@ inline void testAll()
                            static_cast<Scalar (*)(Scalar)>(std::log),
                            1e-6, 1e9);
 
-    // while (false) {
+    while (false) {
     // while (true) {
         Scalar val1 OPM_UNUSED = 0.0;
         Scalar val2 OPM_UNUSED = 1.0;
@@ -643,7 +643,7 @@ inline void testAll()
         resultEval = Opm::sqrt(eval1);
         resultEval = Opm::exp(eval1);
         resultEval = Opm::log(eval1);
-    // }
+    }
 }
 
 };//TestEnv

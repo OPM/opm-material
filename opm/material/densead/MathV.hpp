@@ -82,7 +82,7 @@ EvaluationV<ValueType> tan(const EvaluationV<ValueType>& x)
 {
     typedef MathToolbox<ValueType> ValueTypeToolbox;
 
-    EvaluationV<ValueType> result(x.size);
+    EvaluationV<ValueType> result = EvaluationV<ValueType>::createConstant(0., x.size);
 
     const ValueType& tmp = ValueTypeToolbox::tan(x.value());
     result.setValue(tmp);
@@ -100,7 +100,7 @@ EvaluationV<ValueType> atan(const EvaluationV<ValueType>& x)
 {
     typedef MathToolbox<ValueType> ValueTypeToolbox;
 
-    EvaluationV<ValueType> result(x.size);
+    EvaluationV<ValueType> result = EvaluationV<ValueType>::createConstant(0., x.size);
 
     result.setValue(ValueTypeToolbox::atan(x.value()));
 
@@ -120,7 +120,7 @@ EvaluationV<ValueType> atan2(const EvaluationV<ValueType>& x,
 
     assert(x.size == y.size);
 
-    EvaluationV<ValueType> result(x.size);
+    EvaluationV<ValueType> result = EvaluationV<ValueType>::createConstant(0., x.size);
 
     result.setValue(ValueTypeToolbox::atan2(x.value(), y.value()));
 
@@ -149,7 +149,7 @@ EvaluationV<ValueType> sin(const EvaluationV<ValueType>& x)
 {
     typedef MathToolbox<ValueType> ValueTypeToolbox;
 
-    EvaluationV<ValueType> result(x.size);
+    EvaluationV<ValueType> result = EvaluationV<ValueType>::createConstant(0., x.size);
 
     result.setValue(ValueTypeToolbox::sin(x.value()));
 
@@ -166,7 +166,7 @@ EvaluationV<ValueType> asin(const EvaluationV<ValueType>& x)
 {
     typedef MathToolbox<ValueType> ValueTypeToolbox;
 
-    EvaluationV<ValueType> result(x.size);
+    EvaluationV<ValueType> result = EvaluationV<ValueType>::createConstant(0., x.size);
 
     result.setValue(ValueTypeToolbox::asin(x.value()));
 
@@ -183,7 +183,7 @@ EvaluationV<ValueType> cos(const EvaluationV<ValueType>& x)
 {
     typedef MathToolbox<ValueType> ValueTypeToolbox;
 
-    EvaluationV<ValueType> result(x.size);
+    EvaluationV<ValueType> result = EvaluationV<ValueType>::createConstant(0., x.size);
 
     result.setValue(ValueTypeToolbox::cos(x.value()));
 
@@ -200,7 +200,7 @@ EvaluationV<ValueType> acos(const EvaluationV<ValueType>& x)
 {
     typedef MathToolbox<ValueType> ValueTypeToolbox;
 
-    EvaluationV<ValueType> result(x.size);
+    EvaluationV<ValueType> result = EvaluationV<ValueType>::createConstant(0., x.size);
 
     result.setValue(ValueTypeToolbox::acos(x.value()));
 
@@ -217,7 +217,7 @@ EvaluationV<ValueType> sqrt(const EvaluationV<ValueType>& x)
 {
     typedef MathToolbox<ValueType> ValueTypeToolbox;
 
-    EvaluationV<ValueType> result(x.size);
+    EvaluationV<ValueType> result = EvaluationV<ValueType>::createConstant(0., x.size);
 
     const ValueType& sqrt_x = ValueTypeToolbox::sqrt(x.value());
     result.setValue(sqrt_x);
@@ -235,7 +235,8 @@ template <class ValueType>
 EvaluationV<ValueType> exp(const EvaluationV<ValueType>& x)
 {
     typedef MathToolbox<ValueType> ValueTypeToolbox;
-    EvaluationV<ValueType> result(x.size);
+
+    EvaluationV<ValueType> result = EvaluationV<ValueType>::createConstant(0., x.size);
 
     const ValueType& exp_x = ValueTypeToolbox::exp(x.value());
     result.setValue(exp_x);
@@ -254,7 +255,8 @@ EvaluationV<ValueType> pow(const EvaluationV<ValueType>& base,
                           const ExpType& exp)
 {
     typedef MathToolbox<ValueType> ValueTypeToolbox;
-    EvaluationV<ValueType> result(base.size);
+
+    EvaluationV<ValueType> result = EvaluationV<ValueType>::createConstant(0., base.size);
 
     const ValueType& pow_x = ValueTypeToolbox::pow(base.value(), exp);
     result.setValue(pow_x);
@@ -281,12 +283,12 @@ EvaluationV<ValueType> pow(const BaseType& base,
 {
     typedef MathToolbox<ValueType> ValueTypeToolbox;
 
-    EvaluationV<ValueType> result(exp.size);
+    EvaluationV<ValueType> result = EvaluationV<ValueType>::createConstant(0., exp.size);
 
     if (base == 0.0) {
         // we special case the base 0 case because 0.0 is in the valid range of the
         // base but the generic code leads to NaNs.
-        result = 0.0;
+        result.setValue(0.0);
     }
     else {
         const ValueType& lnBase = ValueTypeToolbox::log(base);
@@ -311,12 +313,12 @@ EvaluationV<ValueType> pow(const EvaluationV<ValueType>& base,
 
     assert(base.size == exp.size);
 
-    EvaluationV<ValueType> result(base.size);
+    EvaluationV<ValueType> result = EvaluationV<ValueType>::createConstant(0., base.size);
 
     if (base == 0.0) {
         // we special case the base 0 case because 0.0 is in the valid range of the
         // base but the generic code leads to NaNs.
-        result = 0.0;
+        result.setValue(0.0);
     }
     else {
         ValueType valuePow = ValueTypeToolbox::pow(base.value(), exp.value());
@@ -342,7 +344,7 @@ EvaluationV<ValueType> log(const EvaluationV<ValueType>& x)
 {
     typedef MathToolbox<ValueType> ValueTypeToolbox;
 
-    EvaluationV<ValueType> result(x.size);
+    EvaluationV<ValueType> result = EvaluationV<ValueType>::createConstant(0., x.size);
 
     result.setValue(ValueTypeToolbox::log(x.value()));
 
@@ -423,9 +425,15 @@ public:
     static EvaluationV max(const Arg1Eval& arg1, const Arg2Eval& arg2)
     { return Opm::DenseAd::max(arg1, arg2); }
 
+    /* static EvaluationV max(const EvaluationV& arg1, const ValueType& arg2)
+    { return Opm::DenseAd::max(arg1, arg2); } */
+
     template <class Arg1Eval, class Arg2Eval>
     static EvaluationV min(const Arg1Eval& arg1, const Arg2Eval& arg2)
     { return Opm::DenseAd::min(arg1, arg2); }
+
+    /* static EvaluationV min(const EvaluationV& arg1, const ValueType& arg2)
+    { return Opm::DenseAd::min(arg1, arg2); } */
 
     static EvaluationV abs(const EvaluationV& arg)
     { return Opm::DenseAd::abs(arg); }

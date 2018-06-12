@@ -35,7 +35,7 @@
 
 #include <dune/common/version.hh>
 
-#include <array>
+#include <vector>
 #include <cmath>
 #include <cassert>
 #include <cstring>
@@ -73,17 +73,20 @@ protected:
 public:
     //! default constructor
     // TODO: maybe we should make a default usable one?
-    EvaluationV() : data_()
-    {}
+    EvaluationV() = default;
 
-    //! constructor with number of primary variables
-    // TODO: maybe we should not have this one, then always use resize?
-    EvaluationV(const int numVars)
-     : size(numVars)
+    // TODO: this is rather dangerous to have
+    // put here just help to make ReturnEval_(EvaluationV, double) return EvaluationV.
+    // we should not use it in the calculation at all.
+    EvaluationV(const ValueType& value)
+     : size(0)
      , length_(size + 1)
      , dend_(length_)
      , data_(length_, 0.0)
-    {}
+    {
+        throw std::runtime_error(" You should not convert a Scalar to EvaluationV without the number of variables at all! ");
+        setValue(value);
+    }
 
 
     //! when resizing, all the data will be cleaned
@@ -101,10 +104,6 @@ public:
     //
     // i.e., f(x) = c. this implies an evaluation with the given value and all
     // derivatives being zero.
-    // TODO: we need to know the number of the variables
-    // TODO: this can be a problem with the constructor with int size
-    // TODO: we should add the number of variables to this function input
-    // TODO: basically, we can not just return a scalar for the function needs an Evaluation
     template <class RhsValueType>
     EvaluationV(const RhsValueType& c, const int numVars)
     {
@@ -118,7 +117,6 @@ public:
     //
     // i.e., f(x) = c. this implies an evaluation with the given value and all
     // derivatives being zero.
-    // TODO: we have to have a one with a value and also number of variables.
     template <class RhsValueType>
     EvaluationV(const RhsValueType& c, const int varPos, const int numVars)
     {
@@ -143,7 +141,6 @@ public:
     }
 
     // create a function evaluation for a "naked" depending variable (i.e., f(x) = x)
-    // TODO: we need the number of the variables.
     template <class RhsValueType>
     static EvaluationV createVariable(const RhsValueType& value, const int varPos, const int numVars)
     {
@@ -163,7 +160,6 @@ public:
     // print the value and the derivatives of the function evaluation
     void print(std::ostream& os = std::cout) const
     {
-        // TODO: some assertion here?
         // print value
         os << "v: " << value() << " / d:";
 
