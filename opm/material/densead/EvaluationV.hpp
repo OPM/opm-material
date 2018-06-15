@@ -508,7 +508,7 @@ EvaluationV<ValueType> operator+(const RhsValueType& a, const EvaluationV<ValueT
 template <class RhsValueType, class ValueType>
 EvaluationV<ValueType> operator-(const RhsValueType& a, const EvaluationV<ValueType>& b)
 {
-    EvaluationV<ValueType> result(a);
+    EvaluationV<ValueType> result(a, b.size);
     result -= b;
     return result;
 }
@@ -516,7 +516,7 @@ EvaluationV<ValueType> operator-(const RhsValueType& a, const EvaluationV<ValueT
 template <class RhsValueType, class ValueType>
 EvaluationV<ValueType> operator/(const RhsValueType& a, const EvaluationV<ValueType>& b)
 {
-    EvaluationV<ValueType> tmp(a);
+    EvaluationV<ValueType> tmp(a, b.size);
     tmp /= b;
     return tmp;
 }
