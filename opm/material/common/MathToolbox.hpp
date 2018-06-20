@@ -230,9 +230,19 @@ template <class Evaluation, class Scalar>
 Evaluation constant(const Scalar& value)
 { return Opm::MathToolbox<Evaluation>::createConstant(value); }
 
+template <class Evaluation, int numVars, class Scalar>
+Evaluation constant(const Scalar& value)
+{ return Opm::MathToolbox<Evaluation>::createConstant(value, numVars); }
+
+
 template <class Evaluation, class Scalar>
 Evaluation variable(const Scalar& value, unsigned idx)
 { return Opm::MathToolbox<Evaluation>::createVariable(value, idx); }
+
+template <class Evaluation, int numVars, class Scalar>
+Evaluation variable(const Scalar& value, unsigned idx)
+{ return Opm::MathToolbox<Evaluation>::createVariable(value, idx, numVars); }
+
 
 template <class ResultEval, class Evaluation>
 auto decay(const Evaluation& value)
