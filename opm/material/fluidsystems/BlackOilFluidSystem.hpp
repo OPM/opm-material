@@ -1031,8 +1031,8 @@ public:
 
         const auto& p = Opm::decay<LhsEval>(fluidState.pressure(phaseIdx));
         //const auto& T = Opm::decay<LhsEval>(fluidState.temperature(phaseIdx));
-        double ent_fac=0;
-        //double ent_fac = 1;
+        //double ent_fac=0;
+        double ent_fac = 1.0;
         return energy<FluidState, LhsEval>(fluidState, phaseIdx, regionIdx)
                 + ent_fac*p/density<FluidState, LhsEval>(fluidState, phaseIdx, regionIdx);
 

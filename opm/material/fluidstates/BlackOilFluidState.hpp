@@ -322,8 +322,8 @@ public:
      */
     Scalar internalEnergy(unsigned phaseIdx OPM_UNUSED) const
     {
-        double ent_fac=0.0;
-        //double ent_fac=0;
+        //double ent_fac=0.0;
+        double ent_fac=1.0;
         return (*enthalpy_)[phaseIdx] - ent_fac*pressure(phaseIdx)/density(phaseIdx);
     }
 
