@@ -551,7 +551,7 @@ public:
             if (enableDissolvedGas()) {
                 // miscible oil
                 const LhsEval& Rs = Opm::BlackOil::template getRs_<ThisType, FluidState, LhsEval>(fluidState, regionIdx);
-                const LhsEval& bo = oilPvt_->inverseFormationVolumeFactor(regionIdx, T, p, Rs);
+                const LhsEval& bo = inverseFormationVolumeFactor(fluidState, phaseIdx, regionIdx);
 
                 return
                     bo*referenceDensity(oilPhaseIdx, regionIdx)
@@ -560,7 +560,7 @@ public:
 
             // immiscible oil
             const LhsEval Rs(0.0);
-            const auto& bo = oilPvt_->inverseFormationVolumeFactor(regionIdx, T, p, Rs);
+            const auto& bo =  inverseFormationVolumeFactor(fluidState, phaseIdx, regionIdx);
 
             return referenceDensity(phaseIdx, regionIdx)*bo;
         }
@@ -569,8 +569,7 @@ public:
             if (enableVaporizedOil()) {
                 // miscible gas
                 const LhsEval& Rv = Opm::BlackOil::template getRv_<ThisType, FluidState, LhsEval>(fluidState, regionIdx);
-                const LhsEval& bg = gasPvt_->inverseFormationVolumeFactor(regionIdx, T, p, Rv);
-
+                const LhsEval& bg =  inverseFormationVolumeFactor(fluidState, phaseIdx, regionIdx);
                 return
                     bg*referenceDensity(gasPhaseIdx, regionIdx)
                     + Rv*bg*referenceDensity(oilPhaseIdx, regionIdx);
@@ -578,7 +577,7 @@ public:
 
             // immiscible gas
             const LhsEval Rv(0.0);
-            const auto& bg = gasPvt_->inverseFormationVolumeFactor(regionIdx, T, p, Rv);
+            const auto& bg =  inverseFormationVolumeFactor(fluidState, phaseIdx, regionIdx);
             return bg*referenceDensity(phaseIdx, regionIdx);
         }
 
@@ -654,6 +653,74 @@ public:
 
         throw std::logic_error("Unhandled phase index "+std::to_string(phaseIdx));
     }
+
+    template <class FluidState, class LhsEval = typename FluidState::Scalar>
+    static LhsEval energy(const FluidState& fluidState,
+                                    unsigned phaseIdx,
+                                    unsigned regionIdx)
+    {
+        assert(0 <= phaseIdx && phaseIdx <= numPhases);
+        assert(0 <= regionIdx && regionIdx <= numRegions());
+
+        //const auto& p = fluidState.pressure(phaseIdx);
+        //const auto& T = fluidState.temperature(phaseIdx);
+        const auto& p = Opm::decay<LhsEval>(fluidState.pressure(phaseIdx));
+        const auto& T = Opm::decay<LhsEval>(fluidState.temperature(phaseIdx));
+        switch (phaseIdx) {
+        case oilPhaseIdx: {
+            if (enableDissolvedGas()) {
+                // miscible oil
+                const LhsEval& Rs = Opm::BlackOil::template getRs_<ThisType, FluidState, LhsEval>(fluidState, regionIdx);
+                //const LhsEval& bo = oilPvt_->inverseFormationVolumeFactor(regionIdx, T, p, Rs);
+                const LhsEval& bo = inverseFormationVolumeFactor(fluidState, phaseIdx, regionIdx);
+                //const LhsEval& bo = Opm::decay<LhsEval>(fluidState.invB(phaseIdx));
+                const LhsEval& Rv = Opm::BlackOil::template getRv_<ThisType, FluidState, LhsEval>(fluidState, regionIdx);
+                LhsEval energy =
+                    bo*referenceDensity(oilPhaseIdx, regionIdx)
+                        *oilPvt_->internalEnergy(regionIdx, T, p,  Rs)
+                    + Rs*bo*referenceDensity(gasPhaseIdx, regionIdx)
+                        *gasPvt_->internalEnergy(regionIdx, T, p,  Rv);//this a to simple model
+                return energy/density<FluidState, LhsEval>(fluidState, phaseIdx, regionIdx);
+            }
+
+            // immiscible oil
+            const LhsEval Rs(0.0);
+            //const LhsEval& bo = oilPvt_->inverseFormationVolumeFactor(regionIdx, T, p, Rs);
+            //const LhsEval& bo = Opm::decay<LhsEval>(fluidState.invB(phaseIdx));
+            return oilPvt_->internalEnergy(regionIdx, T, p,  Rs);
+            }
+
+        case gasPhaseIdx: {
+            if (enableVaporizedOil()) {
+                // miscible gas
+                const LhsEval& Rs = Opm::BlackOil::template getRs_<ThisType, FluidState, LhsEval>(fluidState, regionIdx);
+                const LhsEval& Rv =  Opm::BlackOil::template getRv_<ThisType, FluidState, LhsEval>(fluidState, regionIdx);
+                const LhsEval& bg =  inverseFormationVolumeFactor(fluidState, phaseIdx, regionIdx);
+                //const LhsEval& bg = Opm::decay<LhsEval>(fluidState.invB(phaseIdx));
+                LhsEval energy =
+                    bg*referenceDensity(gasPhaseIdx, regionIdx)
+                        *gasPvt_->internalEnergy(regionIdx, T, p,  Rv)
+                    + Rv*bg*referenceDensity(oilPhaseIdx, regionIdx)
+                        *oilPvt_->internalEnergy(regionIdx, T, p,  Rs);// this is a to simple model
+                return energy/density<FluidState, LhsEval>(fluidState, phaseIdx, regionIdx);
+            }
+
+            // immiscible gas
+            const LhsEval Rv(0.0);
+           // const LhsEval& bg = gasPvt_->inverseFormationVolumeFactor(regionIdx, T, p, Rv);
+
+            return gasPvt_->internalEnergy(regionIdx, T, p,  Rv);
+
+        }
+
+        case waterPhaseIdx:
+                return waterPvt_->internalEnergy(regionIdx, T, p);
+
+        }
+
+        throw std::logic_error("Unhandled phase index "+std::to_string(phaseIdx));
+    }
+
 
     /*!
      * \brief Returns the formation volume factor \f$B_\alpha\f$ of an "undersaturated"
@@ -963,28 +1030,13 @@ public:
         assert(0 <= regionIdx && regionIdx <= numRegions());
 
         const auto& p = Opm::decay<LhsEval>(fluidState.pressure(phaseIdx));
-        const auto& T = Opm::decay<LhsEval>(fluidState.temperature(phaseIdx));
+        //const auto& T = Opm::decay<LhsEval>(fluidState.temperature(phaseIdx));
+        double ent_fac=0;
+        //double ent_fac = 1;
+        return energy<FluidState, LhsEval>(fluidState, phaseIdx, regionIdx)
+                + ent_fac*p/density<FluidState, LhsEval>(fluidState, phaseIdx, regionIdx);
 
-        switch (phaseIdx) {
-        case oilPhaseIdx:
-            return
-                oilPvt_->internalEnergy(regionIdx, T, p, Opm::BlackOil::template getRs_<ThisType, FluidState, LhsEval>(fluidState, regionIdx))
-                + p/density<FluidState, LhsEval>(fluidState, phaseIdx, regionIdx);
-
-        case gasPhaseIdx:
-            return
-                gasPvt_->internalEnergy(regionIdx, T, p, Opm::BlackOil::template getRv_<ThisType, FluidState, LhsEval>(fluidState, regionIdx))
-                + p/density<FluidState, LhsEval>(fluidState, phaseIdx, regionIdx);
-
-        case waterPhaseIdx:
-            return
-                waterPvt_->internalEnergy(regionIdx, T, p)
-                + p/density<FluidState, LhsEval>(fluidState, phaseIdx, regionIdx);
-
-        default: throw std::logic_error("Unhandled phase index "+std::to_string(phaseIdx));
-        }
-
-        throw std::logic_error("Unhandled phase index "+std::to_string(phaseIdx));
+        //return energy;
     }
 
     /*!
