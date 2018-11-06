@@ -322,9 +322,11 @@ public:
      */
     Scalar internalEnergy(unsigned phaseIdx OPM_UNUSED) const
     {
-        //double ent_fac=0.0;
-        double ent_fac=1.0;
-        return (*enthalpy_)[phaseIdx] - ent_fac*pressure(phaseIdx)/density(phaseIdx);
+        //double entFac=0.0;
+        double entFac=1.0;
+        // this may be setting which for entFac =1 make this probably E100 compatible
+        // however this has to be consitent with call to enthalpy
+        return (*enthalpy_)[phaseIdx] - entFac*pressure(phaseIdx)/density(phaseIdx);
     }
 
     //////
