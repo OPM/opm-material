@@ -820,12 +820,16 @@ inline void testAll(const char* deckString)
     for (unsigned i = 0; i < steps; ++i) {
         Scalar p = Scalar(i)/steps*350e5 + 100e5;
         Scalar T = 273.0;
+        /*
         Scalar So = 0.3;
         Scalar Sg = 0.3;
         Scalar MaxSo = 0.7;
         Scalar MaxSg = 0.7;
         Scalar RsSat = oilPvt.saturatedGasDissolutionFactor(regionIdx, T, p, So, MaxSo);
         Scalar RvSat = gasPvt.saturatedOilVaporizationFactor(regionIdx, T, p, Sg, MaxSg);
+        */
+        Scalar RsSat = oilPvt.saturatedGasDissolutionFactor(regionIdx, T, p);
+        Scalar RvSat = gasPvt.saturatedOilVaporizationFactor(regionIdx, T, p);
 
         
         Scalar Rs = RsSat;
