@@ -551,7 +551,7 @@ public:
             if (enableDissolvedGas()) {
                 // miscible oil
                 const LhsEval& Rs = Opm::BlackOil::template getRs_<ThisType, FluidState, LhsEval>(fluidState, regionIdx);
-                const LhsEval& bo = inverseFormationVolumeFactor(fluidState, phaseIdx, regionIdx);
+                const LhsEval& bo = inverseFormationVolumeFactor<FluidState,LhsEval>(fluidState, phaseIdx, regionIdx);
 
                 return
                     bo*referenceDensity(oilPhaseIdx, regionIdx)
@@ -560,7 +560,7 @@ public:
 
             // immiscible oil
             const LhsEval Rs(0.0);
-            const auto& bo =  inverseFormationVolumeFactor(fluidState, phaseIdx, regionIdx);
+            const auto& bo =  inverseFormationVolumeFactor<FluidState,LhsEval>(fluidState, phaseIdx, regionIdx);
 
             return referenceDensity(phaseIdx, regionIdx)*bo;
         }
@@ -569,7 +569,7 @@ public:
             if (enableVaporizedOil()) {
                 // miscible gas
                 const LhsEval& Rv = Opm::BlackOil::template getRv_<ThisType, FluidState, LhsEval>(fluidState, regionIdx);
-                const LhsEval& bg =  inverseFormationVolumeFactor(fluidState, phaseIdx, regionIdx);
+                const LhsEval& bg =  inverseFormationVolumeFactor<FluidState,LhsEval>(fluidState, phaseIdx, regionIdx);
                 return
                     bg*referenceDensity(gasPhaseIdx, regionIdx)
                     + Rv*bg*referenceDensity(oilPhaseIdx, regionIdx);
@@ -577,7 +577,7 @@ public:
 
             // immiscible gas
             const LhsEval Rv(0.0);
-            const auto& bg =  inverseFormationVolumeFactor(fluidState, phaseIdx, regionIdx);
+            const auto& bg =  inverseFormationVolumeFactor<FluidState,LhsEval>(fluidState, phaseIdx, regionIdx);
             return bg*referenceDensity(phaseIdx, regionIdx);
         }
 
@@ -672,7 +672,7 @@ public:
                 // miscible oil
                 const LhsEval& Rs = Opm::BlackOil::template getRs_<ThisType, FluidState, LhsEval>(fluidState, regionIdx);
                 //const LhsEval& bo = oilPvt_->inverseFormationVolumeFactor(regionIdx, T, p, Rs);
-                const LhsEval& bo = inverseFormationVolumeFactor(fluidState, phaseIdx, regionIdx);
+                const LhsEval& bo = inverseFormationVolumeFactor<FluidState,LhsEval>(fluidState, phaseIdx, regionIdx);
                 //const LhsEval& bo = Opm::decay<LhsEval>(fluidState.invB(phaseIdx));
                 const LhsEval& Rv = Opm::BlackOil::template getRv_<ThisType, FluidState, LhsEval>(fluidState, regionIdx);
                 LhsEval energy =
@@ -695,7 +695,7 @@ public:
                 // miscible gas
                 const LhsEval& Rs = Opm::BlackOil::template getRs_<ThisType, FluidState, LhsEval>(fluidState, regionIdx);
                 const LhsEval& Rv =  Opm::BlackOil::template getRv_<ThisType, FluidState, LhsEval>(fluidState, regionIdx);
-                const LhsEval& bg =  inverseFormationVolumeFactor(fluidState, phaseIdx, regionIdx);
+                const LhsEval& bg =  inverseFormationVolumeFactor<FluidState,LhsEval>(fluidState, phaseIdx, regionIdx);
                 //const LhsEval& bg = Opm::decay<LhsEval>(fluidState.invB(phaseIdx));
                 LhsEval energy =
                     bg*referenceDensity(gasPhaseIdx, regionIdx)
