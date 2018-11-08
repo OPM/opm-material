@@ -282,10 +282,16 @@ public:
         unsigned i = xSegmentIndex(x, extrapolate);
         const Evaluation& alpha = xToAlpha(x, i);
         // find upper and lower y value
-        Scalar shift = 0;
+        Evaluation shift = 0.0;
         // avoid proper constructor
-        if(dyPos_.size()>0){            
-            shift = dyPos_[i];
+        if(yPos_.size()>0){
+            if( do_left_  ){
+                shift = yPos_[i+1]-yPos_[i];
+            }else{
+                shift = yPos_[i+1]-yPos_[i];
+                auto yEnd = yPos_[i]*(1.0 - alpha) + yPos_[i+1]*alpha;
+                shift = shift*y/yEnd;
+            }
         }    
         auto ylower =  y-alpha*shift;
         auto yupper =  y+(1-alpha)*shift;        
@@ -486,24 +492,25 @@ public:
     }
 
     void finalize(bool left){
-        dyPos_.resize(xPos_.size()-1,0.0);
+        yPos_.resize(xPos_.size(),0.0);
         for(size_t i = 1; i < xPos_.size(); ++i){
-            Scalar dy;
-            const auto& lower = samples_[i-1];
-            const auto& upper = samples_[i];
+            Scalar y;
+            const auto& sample = samples_[i];
+            //const auto& upper = samples_[i];
             if(left){
-                Scalar yup = std::get<1>(upper.front());
-                Scalar ylow = std::get<1>(lower.front()); 
-                dy = yup -ylow;
-                left_ = true;
+                //Scalar yup = std::get<1>(upper.front());
+                //Scalar ylow = std::get<1>(lower.front()); 
+                //dy = yup -ylow;
+                y = std::get<1>(sample.front());
             }else{
-                Scalar yup = std::get<1>(upper.back());
-                Scalar ylow = std::get<1>(lower.back()); 
-                dy = yup -ylow;
-                left_ = false;
+                //Scalar yup = std::get<1>(upper.back());
+                //Scalar ylow = std::get<1>(lower.back()); 
+                //dy = yup -ylow;
+                y = std::get<1>(sample.back());                
             }
-            dyPos_[i-1] = dy;
+            yPos_[i] = y;
         }
+        do_left_ = left;
     }
 
     
@@ -515,7 +522,7 @@ private:
 
     // the position of each vertical line on the x-axis
     std::vector<Scalar> xPos_;
-    std::vector<Scalar> dyPos_;
+    std::vector<Scalar> yPos_;
     bool do_left_;
 };
 } // namespace Opm
