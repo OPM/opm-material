@@ -175,8 +175,17 @@ public:
             const auto& vapParsKeyword = deck.getKeyword("VAPPARS");
             vapPar2_ = vapParsKeyword.getRecord(0).getItem("OIL_DENSITY_PROPENSITY").template get<double>(0);
         }
-
+        
         initEnd();
+        
+        for(auto& tab : inverseOilBTable_){
+            tab.extendTable();
+        }
+        
+        for(auto& tab : inverseOilBMuTable_){
+            tab.extendTable();
+        }
+        
     }
 
 private:

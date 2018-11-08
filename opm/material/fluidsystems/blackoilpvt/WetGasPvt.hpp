@@ -173,6 +173,14 @@ public:
         }
 
         initEnd();
+        std::cout << "Extend WetGasTables" << std::endl;
+        for(auto& tab : inverseGasB_){
+            tab.extendTable();
+        }
+        
+        for(auto& tab : inverseGasBMu_){
+            tab.extendTable();
+        }
     }
 
 private:

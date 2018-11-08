@@ -379,7 +379,100 @@ public:
             os << "\n";
         }
     }
+    void extendTable(){
+        std::vector<std::vector<SamplePoint> > newSamples;
+        newSamples.push_back(samples_[0]);
+        for(size_t i = 1; i < xPos_.size(); ++i){
+            const std::vector<SamplePoint>& prevLine = samples_[i-1];
+            const std::vector<SamplePoint>& line = samples_[i];
+            // find first point on line which is on previus line
+            SamplePoint p0 =prevLine[0];
+            SamplePoint p1 =line[0];
+            auto y = std::get<1>(p1);
+            std::vector<SamplePoint> newLine;
+            for (size_t j = 0; j < prevLine.size(); j++){
+                p0 =prevLine[j];
+                auto yprev = std::get<1>(p0);
+                 // should probably be a function and need to be consistent with evaluation above
+                bool extrapolate = true;
+                unsigned j1 = ySegmentIndex(y, i-1, extrapolate);
+                auto  beta1 = yToBeta(y, i-1, j1);
+                // values of saturated value on previous line
+                auto s1 = valueAt(i-1, j1)*(1.0 - beta1) + valueAt(i-1, j1 + 1)*beta1;
+                // diffence of values at first point on previous line
+                auto val = std::get<2>(p1);
+                auto valPrev = std::get<2>(p0);
+                auto dval = val-s1;
+                if(yprev<y){
+                    // set the new values by in the new line by removing the difference at the interpolation point
+                    // this ensurse same gradient and thous linear diagnoal
+                    std::get<2>(p0) = valPrev+dval;
+                    newLine.push_back(p0);                    
+                }else{
+                    std::cout << "yprev " << yprev << " y " << y << std::endl;
+                    // we have got to a place where no extra points should be added
+                    break;
+                }                    
+            }
+            std::cout << "line exteded with " << newLine.size() << std::endl;           
+            newLine.insert(newLine.end(),line.begin(),line.end());
+            std::cout << "Final size " << newLine.size() << std::endl;
+            newSamples.push_back(newLine);           
+        }
+        samples_ .swap(newSamples);
+    }
 
+
+    void extendTableG(){
+        std::vector<std::vector<SamplePoint> > newSamples;
+        //newSamples.push_back(samples_[0]);
+        for(size_t i = 1; i < xPos_.size(); ++i){
+            const std::vector<SamplePoint>& prevLine = samples_[i-1];
+            const std::vector<SamplePoint>& line = samples_[i];
+            // find first point on line which is on previus line
+            //SamplePoint p0 =prevLine[0];
+            SamplePoint p0 = *prevLine.end();
+            SamplePoint p1 =line[0];
+            auto yprev = std::get<1>(p0);
+            //auto y = std::get<1>(p1);
+            std::vector<SamplePoint> newLine = prevLine;
+            std::cout << "Org size " << newLine.size() << std::endl;
+            //for (size_t j = 0; j < prevLine.size(); j++){
+            bool extrapolate = true;
+            unsigned j1 = ySegmentIndex(yprev, i, extrapolate);
+            auto  beta1 = yToBeta(yprev, i, j1);
+            // values of saturated value on previous line
+            auto s1 = valueAt(i, j1)*(1.0 - beta1) + valueAt(i, j1 + 1)*beta1;
+            for (size_t j = j1; j < line.size(); j++){
+                p1 = line[j]
+                auto ynext = std::get<1>(p1);    
+                //p0 =prevLine[j];
+                if(ynext>yprev){
+                    //auto yprev = std::get<1>(p0);
+                    // should probably be a function and need to be consistent with evaluation above
+                    // diffence of values at first point on previous line
+                    auto val = std::get<2>(p1);
+                    auto valPrev = std::get<2>(p0);
+                    auto dval = valPrev-s1;              
+                    // set the new values by in the new line by removing the difference at the interpolation point
+                    // this ensurse same gradient and thous linear diagnoal
+                    std::get<2>(p1) = val+dval;
+                    newLine.push_back(p1);                    
+                }else{
+                    //std::cout << "yprev " << yprev << " y " << y << std::endl;
+                    // we have got to a place where no extra points should be added
+                    //break;
+                }                    
+            }
+            std::cout << "Final size " << newLine.size() << std::endl;
+            newSamples.push_back(newLine);           
+        }
+        samples_ .swap(newSamples);
+    }
+
+
+
+    
 private:
     // the vector which contains the values of the sample points
     // f(x_i, y_j). don't use this directly, use getSamplePoint(i,j)
