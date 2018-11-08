@@ -179,11 +179,11 @@ public:
         initEnd();
         
         for(auto& tab : inverseOilBTable_){
-            tab.extendTable();
+            tab.extendTableStart();
         }
         
         for(auto& tab : inverseOilBMuTable_){
-            tab.extendTable();
+            tab.extendTableStart();
         }
         
     }

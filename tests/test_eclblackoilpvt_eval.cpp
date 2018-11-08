@@ -814,52 +814,78 @@ inline void testAll(const char* deckString)
 
 
     static const Scalar eps = std::sqrt(std::numeric_limits<Scalar>::epsilon());
-    unsigned regionIdx = 0;
     int steps = 5;
+    bool output_all = false;
     bool all_fine = true;
-    for (unsigned i = 0; i < steps; ++i) {
-        Scalar p = Scalar(i)/steps*350e5 + 100e5;
-        Scalar T = 273.0;
-        /*
-        Scalar So = 0.3;
-        Scalar Sg = 0.3;
-        Scalar MaxSo = 0.7;
-        Scalar MaxSg = 0.7;
-        Scalar RsSat = oilPvt.saturatedGasDissolutionFactor(regionIdx, T, p, So, MaxSo);
-        Scalar RvSat = gasPvt.saturatedOilVaporizationFactor(regionIdx, T, p, Sg, MaxSg);
-        */
-        Scalar RsSat = oilPvt.saturatedGasDissolutionFactor(regionIdx, T, p);
-        Scalar RvSat = gasPvt.saturatedOilVaporizationFactor(regionIdx, T, p);
+    for (int regionIdx = 0; regionIdx < numPvtRegions; ++regionIdx){ 
+        for (unsigned i = 0; i < steps; ++i) {        
+            Scalar p = Scalar(i)/steps*350e5 + 100e5;
+            Scalar T = 273.0;
+            if(output_all){
+                std::cout << "Testing at p: " << p << " T " << T << std::endl;
+            }
+            /*
+              Scalar So = 0.3;
+              Scalar Sg = 0.3;
+              Scalar MaxSo = 0.7;
+              Scalar MaxSg = 0.7;
+              Scalar RsSat = oilPvt.saturatedGasDissolutionFactor(regionIdx, T, p, So, MaxSo);
+              Scalar RvSat = gasPvt.saturatedOilVaporizationFactor(regionIdx, T, p, Sg, MaxSg);
+            */
+            // check consistency on saturated line
+            Scalar RsSat = oilPvt.saturatedGasDissolutionFactor(regionIdx, T, p);
+            Scalar RvSat = gasPvt.saturatedOilVaporizationFactor(regionIdx, T, p);
 
         
-        Scalar Rs = RsSat;
-        Scalar bo = oilPvt.inverseFormationVolumeFactor(regionIdx, T, p, Rs);
-        Scalar bo_sat = oilPvt.saturatedInverseFormationVolumeFactor(regionIdx, T, p);
+            Scalar Rs = RsSat;
+            Scalar bo = oilPvt.inverseFormationVolumeFactor(regionIdx, T, p, Rs);
+            Scalar bo_sat = oilPvt.saturatedInverseFormationVolumeFactor(regionIdx, T, p);
 
-        if (Opm::abs(bo - bo_sat) > eps){
-            std::cout << "********************* Error OilPVT *********************" << std::endl;
-            std::cout << "Saturated table evaluation and saturated value not consitent " << std::endl;
-            std::cout << "Pressure " << p << " Temperature " << T << " RsSat " << RsSat << std::endl;
-            std::cout << "bo " << bo << " bo_sat " << bo_sat << std::endl;
-            //std::abort();
-            all_fine=false;
-        }
+            if ((Opm::abs(bo - bo_sat) > eps) or output_all){
+                std::cout << "********************* Error OilPVT *********************" << std::endl;
+                std::cout << "Saturated table evaluation and saturated value not consitent " << std::endl;
+                std::cout << "Pressure " << p << " Temperature " << T << " RsSat " << RsSat << std::endl;
+                std::cout << "bo " << bo << " bo_sat " << bo_sat << std::endl;
+                //std::abort();
+                all_fine=false;
+            }
 
-        Scalar Rv = RvSat;
-        Scalar bg = gasPvt.inverseFormationVolumeFactor(regionIdx, T, p, Rv);
-        Scalar bg_sat = gasPvt.saturatedInverseFormationVolumeFactor(regionIdx, T, p);
+            Scalar Rv = RvSat;
+            Scalar bg = gasPvt.inverseFormationVolumeFactor(regionIdx, T, p, Rv);
+            Scalar bg_sat = gasPvt.saturatedInverseFormationVolumeFactor(regionIdx, T, p);
 
         
-        if (Opm::abs(bg - bg_sat) > eps){
-            std::cout << "********************* Error GasPVT *********************" << std::endl;
-            std::cout << "Saturated table evaluation and saturated value not consitent " << std::endl;
-            std::cout << "Pressure " << p << " Temperature " << T << " RvSat " << RvSat << std::endl;
-            std::cout << "bg " << bg << " bg_sat " << bg_sat << std::endl;
-            //std::abort();
-            all_fine=false;
+            if ((Opm::abs(bg - bg_sat) > eps) or output_all){
+                std::cout << "********************* Error GasPVT *********************" << std::endl;
+                std::cout << "Saturated table evaluation and saturated value not consitent " << std::endl;
+                std::cout << "Pressure " << p << " Temperature " << T << " RvSat " << RvSat << std::endl;
+                std::cout << "bg " << bg << " bg_sat " << bg_sat << std::endl;
+                //std::abort();
+                all_fine=false;
+            }
+            // do the same for viscosity
+            
+            // check derivatives on saturated line b muB mu
+
+            // check something with vap par ????
+
+            // check that evaluations everywhere do not fail
+            // mu>0 b>0 muB>0 
+
+            // check derivatives with numeric diffentiation
+
+            // Advanced
+            // check total compressibility
+
+            // check saturation line increasing
+            // b factors on line should be increasing
+
+            // check strange initializations
+            
+            
+            
         }
     }
-
     if(!all_fine){
         std::cout << "Error in pvt " << std::endl;
         std::abort();

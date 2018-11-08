@@ -379,7 +379,7 @@ public:
             os << "\n";
         }
     }
-    void extendTable(){
+    void extendTableStart(){
         std::vector<std::vector<SamplePoint> > newSamples;
         newSamples.push_back(samples_[0]);
         for(size_t i = 1; i < xPos_.size(); ++i){
@@ -409,21 +409,21 @@ public:
                     std::get<2>(p0) = valPrev+dval;
                     newLine.push_back(p0);                    
                 }else{
-                    std::cout << "yprev " << yprev << " y " << y << std::endl;
+                    //std::cout << "yprev " << yprev << " y " << y << std::endl;
                     // we have got to a place where no extra points should be added
                     break;
                 }                    
             }
-            std::cout << "line exteded with " << newLine.size() << std::endl;           
+            //std::cout << "line exteded with " << newLine.size() << std::endl;           
             newLine.insert(newLine.end(),line.begin(),line.end());
-            std::cout << "Final size " << newLine.size() << std::endl;
+            //std::cout << "Final size " << newLine.size() << std::endl;
             newSamples.push_back(newLine);           
         }
         samples_ .swap(newSamples);
     }
 
 
-    void extendTableG(){
+    void extendTableEnd(){
         std::vector<std::vector<SamplePoint> > newSamples;
         //newSamples.push_back(samples_[0]);
         for(size_t i = 1; i < xPos_.size(); ++i){
@@ -431,22 +431,23 @@ public:
             const std::vector<SamplePoint>& line = samples_[i];
             // find first point on line which is on previus line
             //SamplePoint p0 =prevLine[0];
-            SamplePoint p0 = *prevLine.end();
+            SamplePoint p0 = *(prevLine.end()-1);
             SamplePoint p1 =line[0];
             auto yprev = std::get<1>(p0);
             //auto y = std::get<1>(p1);
             std::vector<SamplePoint> newLine = prevLine;
-            std::cout << "Org size " << newLine.size() << std::endl;
+            //std::cout << "Org size " << newLine.size() << std::endl;
             //for (size_t j = 0; j < prevLine.size(); j++){
             bool extrapolate = true;
             unsigned j1 = ySegmentIndex(yprev, i, extrapolate);
             auto  beta1 = yToBeta(yprev, i, j1);
             // values of saturated value on previous line
             auto s1 = valueAt(i, j1)*(1.0 - beta1) + valueAt(i, j1 + 1)*beta1;
-            for (size_t j = j1; j < line.size(); j++){
-                p1 = line[j]
+            for (size_t j = 0; j < line.size(); j++){
+                p1 = line[j];
                 auto ynext = std::get<1>(p1);    
                 //p0 =prevLine[j];
+                //std::cout << "i " << i << " ynext " << ynext << " yprev " << yprev << std::endl;
                 if(ynext>yprev){
                     //auto yprev = std::get<1>(p0);
                     // should probably be a function and need to be consistent with evaluation above
@@ -457,14 +458,18 @@ public:
                     // set the new values by in the new line by removing the difference at the interpolation point
                     // this ensurse same gradient and thous linear diagnoal
                     std::get<2>(p1) = val+dval;
-                    newLine.push_back(p1);                    
+                    newLine.push_back(p1);
+                    // std::cout << "i " << i << " ynext " << ynext << " yprev " << yprev
+                    //           << " val " << val
+                    //           << " valPrev " << valPrev
+                    //           << " s1 " << s1 << std::endl;  
                 }else{
                     //std::cout << "yprev " << yprev << " y " << y << std::endl;
                     // we have got to a place where no extra points should be added
                     //break;
                 }                    
             }
-            std::cout << "Final size " << newLine.size() << std::endl;
+            //std::cout << "Final size " << newLine.size() << std::endl;
             newSamples.push_back(newLine);           
         }
         samples_ .swap(newSamples);
