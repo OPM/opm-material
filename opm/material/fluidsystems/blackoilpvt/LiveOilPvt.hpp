@@ -178,13 +178,18 @@ public:
         
         initEnd();
         
+        
         for(auto& tab : inverseOilBTable_){
-            tab.extendTableStart();
+            tab.finalize(/*left*/ true);
+            //tab.extendTableStart();
         }
         
         for(auto& tab : inverseOilBMuTable_){
-            tab.extendTableStart();
+            tab.finalize(/*left*/ true);
+            //tab.extendTableStart();
         }
+        
+        
         
     }
 

@@ -176,11 +176,13 @@ public:
                 
         std::cout << "Extend WetGasTables" << std::endl;
         for(auto& tab : inverseGasB_){
-            tab.extendTableEnd();
+            tab.finalize(/*left*/ false);
+            //tab.extendTableEnd();
         }
         
         for(auto& tab : inverseGasBMu_){
-            tab.extendTableEnd();
+            tab.finalize(/*left*/ false);
+            //tab.extendTableEnd();
         }
         
         

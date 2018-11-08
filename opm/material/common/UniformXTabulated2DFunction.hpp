@@ -281,11 +281,19 @@ public:
         // table ...
         unsigned i = xSegmentIndex(x, extrapolate);
         const Evaluation& alpha = xToAlpha(x, i);
-
-        unsigned j1 = ySegmentIndex(y, i, extrapolate);
-        unsigned j2 = ySegmentIndex(y, i + 1, extrapolate);
-        const Evaluation& beta1 = yToBeta(y, i, j1);
-        const Evaluation& beta2 = yToBeta(y, i + 1, j2);
+        // find upper and lower y value
+        Scalar shift = 0;
+        // avoid proper constructor
+        if(dyPos_.size()>0){            
+            shift = dyPos_[i];
+        }    
+        auto ylower =  y-alpha*shift;
+        auto yupper =  y+(1-alpha)*shift;        
+        
+        unsigned j1 = ySegmentIndex(ylower, i, extrapolate);
+        unsigned j2 = ySegmentIndex(yupper, i + 1, extrapolate);
+        const Evaluation& beta1 = yToBeta(ylower, i, j1);
+        const Evaluation& beta2 = yToBeta(yupper, i + 1, j2);
 
         // evaluate the two function values for the same y value ...
         const Evaluation& s1 = valueAt(i, j1)*(1.0 - beta1) + valueAt(i, j1 + 1)*beta1;
@@ -477,7 +485,26 @@ public:
         samples_ .swap(newSamples);
     }
 
-
+    void finalize(bool left){
+        dyPos_.resize(xPos_.size()-1,0.0);
+        for(size_t i = 1; i < xPos_.size(); ++i){
+            Scalar dy;
+            const auto& lower = samples_[i-1];
+            const auto& upper = samples_[i];
+            if(left){
+                Scalar yup = std::get<1>(upper.front());
+                Scalar ylow = std::get<1>(lower.front()); 
+                dy = yup -ylow;
+                left_ = true;
+            }else{
+                Scalar yup = std::get<1>(upper.back());
+                Scalar ylow = std::get<1>(lower.back()); 
+                dy = yup -ylow;
+                left_ = false;
+            }
+            dyPos_[i-1] = dy;
+        }
+    }
 
     
 private:
@@ -488,6 +515,8 @@ private:
 
     // the position of each vertical line on the x-axis
     std::vector<Scalar> xPos_;
+    std::vector<Scalar> dyPos_;
+    bool do_left_;
 };
 } // namespace Opm
 
