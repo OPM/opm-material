@@ -472,6 +472,8 @@ public:
             //std::cout << "Final size " << newLine.size() << std::endl;
             newSamples.push_back(newLine);           
         }
+        newSamples.push_back(samples_[xPos_.size()-1]);
+        assert(newSamples.size() == samples_.size());
         samples_ .swap(newSamples);
     }
 
