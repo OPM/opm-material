@@ -176,21 +176,31 @@ public:
             vapPar2_ = vapParsKeyword.getRecord(0).getItem("OIL_DENSITY_PROPENSITY").template get<double>(0);
         }
         
-        initEnd();
-        
-        
+        initEnd();               
+        setLineParallelInterpolation();
+    }
+
+    void setLineParallelInterpolation(){
         for(auto& tab : inverseOilBTable_){
             tab.finalize(/*left*/ true);
-            //tab.extendTableStart();
-        }
-        
+        }        
         for(auto& tab : inverseOilBMuTable_){
             tab.finalize(/*left*/ true);
-            //tab.extendTableStart();
         }
-        
-        
-        
+        for(auto& tab : oilMuTable_){
+            tab.finalize(/*left*/ true);
+        }
+    }
+    void extendTables(){    
+        for(auto& tab : inverseOilBTable_){
+            tab.extendTableStart();
+        }        
+        for(auto& tab : inverseOilBMuTable_){
+            tab.extendTableStart();
+        }
+        for(auto& tab : oilMuTable_){
+            tab.extendTableStart();
+        }
     }
 
 private:
@@ -615,6 +625,7 @@ private:
             pSatSamplePoints.push_back(val);
         }
 
+        
         //Prune duplicate Rs values (can occur, and will cause problems in further interpolation)
         auto x_coord_comparator = [](const Pair& a, const Pair& b) { return a.first == b.first; };
         auto last = std::unique(pSatSamplePoints.begin(), pSatSamplePoints.end(), x_coord_comparator);

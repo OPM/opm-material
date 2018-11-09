@@ -172,20 +172,30 @@ public:
             vapPar1_ = vapParsKeyword.getRecord(0).getItem("OIL_VAP_PROPENSITY").template get<double>(0);
         }
 
-        initEnd();
-                
-        std::cout << "Extend WetGasTables" << std::endl;
+        initEnd();                        
+        setLineParallelInterpolation();
+    }
+    void setLineParallelInterpolation(){
         for(auto& tab : inverseGasB_){
             tab.finalize(/*left*/ false);
-            //tab.extendTableEnd();
-        }
-        
+        }        
         for(auto& tab : inverseGasBMu_){
             tab.finalize(/*left*/ false);
-            //tab.extendTableEnd();
         }
-        
-        
+        for(auto& tab : gasMu_){
+            tab.finalize(/*left*/ false);
+        }
+    }
+    void extendTables(){
+        for(auto& tab : inverseGasB_){
+            tab.extendTableEnd();
+        }        
+        for(auto& tab : inverseGasBMu_){
+             tab.extendTableEnd();
+        }
+        for(auto& tab : gasMu_){
+            tab.extendTableEnd();
+        }
     }
 
 private:
