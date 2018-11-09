@@ -819,9 +819,9 @@ inline void testAll(const char* deckString)
     bool all_fine = true;
     for (int regionIdx = 0; regionIdx < numPvtRegions; ++regionIdx){
         std::cout << " ********************************************** " << std::endl;
-        std::cout << " Testing pvt region " << std::endl;
+        std::cout << " Testing pvt region " << regionIdx << std::endl;
         for (unsigned i = 0; i < steps; ++i) {        
-            Scalar p = Scalar(i)/steps*350e5 + 100e5;
+            Scalar p = Scalar(i)/steps*115e5 + 100e5;
             Scalar T = 273.0;
             if(output_all){
                 std::cout << "Testing at p: " << p << " T " << T << std::endl;
