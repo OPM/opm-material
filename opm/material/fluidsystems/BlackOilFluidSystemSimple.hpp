@@ -647,9 +647,9 @@ public:
         case oilPhaseIdx: {
             if (enableDissolvedGas()) {
                 const auto& Rs = Opm::BlackOil::template getRs_<ThisType, FluidState, LhsEval>(fluidState, regionIdx);
-                if (fluidState.saturation(gasPhaseIdx) > 0.0 ){
-                    return oilPvt_->saturatedInverseFormationVolumeFactor(regionIdx, T, p);
-                }
+                // if (fluidState.saturation(gasPhaseIdx) > 0.0 ){
+                //    return oilPvt_->saturatedInverseFormationVolumeFactor(regionIdx, T, p);
+                //}
                 return oilPvt_->inverseFormationVolumeFactor(regionIdx, T, p, Rs);
             }
 
@@ -659,9 +659,9 @@ public:
         case gasPhaseIdx: {
             if (enableVaporizedOil()) {
                 const auto& Rv = Opm::BlackOil::template getRv_<ThisType, FluidState, LhsEval>(fluidState, regionIdx);
-                if (fluidState.saturation(oilPhaseIdx) > 0.0 ){
-                    return gasPvt_->saturatedInverseFormationVolumeFactor(regionIdx, T, p);
-                }
+                // if (fluidState.saturation(oilPhaseIdx) > 0.0 ){
+                //     return gasPvt_->saturatedInverseFormationVolumeFactor(regionIdx, T, p);
+                // }
                 return gasPvt_->inverseFormationVolumeFactor(regionIdx, T, p, Rv);
             }
 
@@ -842,9 +842,9 @@ public:
         case oilPhaseIdx: {
             if (enableDissolvedGas()) {
                 const auto& Rs = Opm::BlackOil::template getRs_<ThisType, FluidState, LhsEval>(fluidState, regionIdx);
-                if (fluidState.saturation(gasPhaseIdx) > 0.0){                
-                    return oilPvt_->saturatedViscosity(regionIdx, T, p);
-                }
+                // if (fluidState.saturation(gasPhaseIdx) > 0.0){                
+                //     return oilPvt_->saturatedViscosity(regionIdx, T, p);
+                // }
 
                 return oilPvt_->viscosity(regionIdx, T, p, Rs);
             }
@@ -856,9 +856,9 @@ public:
         case gasPhaseIdx: {
             if (enableVaporizedOil()) {
                 const auto& Rv = Opm::BlackOil::template getRv_<ThisType, FluidState, LhsEval>(fluidState, regionIdx);
-                if (fluidState.saturation(oilPhaseIdx) > 0.0){              
-                    return gasPvt_->saturatedViscosity(regionIdx, T, p);
-                }
+                // if (fluidState.saturation(oilPhaseIdx) > 0.0){              
+                //     return gasPvt_->saturatedViscosity(regionIdx, T, p);
+                // }
 
                 return gasPvt_->viscosity(regionIdx, T, p, Rv);
             }
