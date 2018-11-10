@@ -561,7 +561,7 @@ public:
             if (enableDissolvedGas()) {
                 // miscible oil
                 const LhsEval& Rs = Opm::BlackOil::template getRs_<ThisType, FluidState, LhsEval>(fluidState, regionIdx);
-                const LhsEval& bo = oilPvt_->inverseFormationVolumeFactor(regionIdx, T, p, Rs);
+                const LhsEval& bo = inverseFormationVolumeFactor<FluidState,LhsEval>(fluidState, oilPhaseIdx, regionIdx);
 
                 return
                     bo*referenceDensity(oilPhaseIdx, regionIdx)
@@ -579,7 +579,7 @@ public:
             if (enableVaporizedOil()) {
                 // miscible gas
                 const LhsEval& Rv = Opm::BlackOil::template getRv_<ThisType, FluidState, LhsEval>(fluidState, regionIdx);
-                const LhsEval& bg = gasPvt_->inverseFormationVolumeFactor(regionIdx, T, p, Rv);
+                const LhsEval& bg = inverseFormationVolumeFactor<FluidState,LhsEval>(fluidState, gasPhaseIdx, regionIdx);
 
                 return
                     bg*referenceDensity(gasPhaseIdx, regionIdx)
@@ -601,28 +601,10 @@ public:
         throw std::logic_error("Unhandled phase index "+std::to_string(phaseIdx));
     }
 
-    /*!
-     * \brief Compute the density of a saturated fluid phase.
-     *
-     * This means the density of the given fluid phase if the dissolved component (gas
-     * for the oil phase and oil for the gas phase) is at the thermodynamically possible
-     * maximum. For the water phase, there's no difference to the density() method.
-     */
-    /*
-    template <class FluidState, class LhsEval = typename FluidState::Scalar>
-    static LhsEval saturatedDensity(const FluidState& fluidState,
-                                    unsigned phaseIdx,
-                                    unsigned regionIdx)
-    {
-        assert(0 <= phaseIdx && phaseIdx <= numPhases);
-        assert(0 <= regionIdx && regionIdx <= numRegions());
-        //return density<FluidState,LhsEval>(fluidState, phaseIdx, regionIdx);
-        const auto& p = fluidState.pressure(phaseIdx);
-        const auto& T = fluidState.temperature(phaseIdx);
-        return saturatedInverseFormationFactor(fluidState, phaseIdx, regionIdx)*referenceDensity(gasPhaseIdx, regionIdx);
-        
-    }
-    */
+
+inverseFormationVolumeFactor(const FluidState& fluidState,
+                                                unsigned phaseIdx,
+                                                unsigned regionIdx)
     /*!
      * \brief Returns the formation volume factor \f$B_\alpha\f$ of an "undersaturated"
      *        fluid phase
