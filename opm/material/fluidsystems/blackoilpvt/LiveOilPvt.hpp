@@ -636,15 +636,17 @@ private:
 
     std::vector<Scalar> gasReferenceDensity_;
     std::vector<Scalar> oilReferenceDensity_;
-    std::vector<TabulatedTwoDFunction> inverseOilBTable_;
+    std::vector<TabulatedTwoDFunction> inverseOilBTable_;    
+    std::vector<TabulatedTwoDFunction> inverseOilBMuTable_;    
+    std::vector<TabulatedOneDFunction> saturatedGasDissolutionFactorTable_;// could be taken directly form the invOilTable_
+    std::vector<TabulatedOneDFunction> saturationPressure_;// could be taken directly form the invOilTable_
+    // not needed
     std::vector<TabulatedTwoDFunction> oilMuTable_;
-    std::vector<TabulatedTwoDFunction> inverseOilBMuTable_;
     std::vector<TabulatedOneDFunction> saturatedOilMuTable_;
     std::vector<TabulatedOneDFunction> inverseSaturatedOilBTable_;
     std::vector<TabulatedOneDFunction> inverseSaturatedOilBMuTable_;
-    std::vector<TabulatedOneDFunction> saturatedGasDissolutionFactorTable_;
-    std::vector<TabulatedOneDFunction> saturationPressure_;
 
+    
     Scalar vapPar2_;
 };
 
