@@ -615,7 +615,9 @@ public:
     {
         assert(0 <= phaseIdx && phaseIdx <= numPhases);
         assert(0 <= regionIdx && regionIdx <= numRegions());
+        return density<FluidState,LhsEval>(fluidState, phaseIdx, regionIdx);
 
+        /*
         const auto& p = fluidState.pressure(phaseIdx);
         const auto& T = fluidState.temperature(phaseIdx);
 
@@ -663,6 +665,7 @@ public:
         }
 
         throw std::logic_error("Unhandled phase index "+std::to_string(phaseIdx));
+        */
     }
 
     /*!
@@ -681,29 +684,14 @@ public:
         assert(0 <= phaseIdx && phaseIdx <= numPhases);
         assert(0 <= regionIdx && regionIdx <= numRegions());
 
+        
         const auto& p = Opm::decay<LhsEval>(fluidState.pressure(phaseIdx));
         const auto& T = Opm::decay<LhsEval>(fluidState.temperature(phaseIdx));
 
         switch (phaseIdx) {
         case oilPhaseIdx: {
             if (enableDissolvedGas()) {
-                const auto& Rs = Opm::BlackOil::template getRs_<ThisType, FluidState, LhsEval>(fluidState, regionIdx);
-                if (fluidState.saturation(gasPhaseIdx) > 0.0
-                    && Rs >= (1.0 - 1e-10)*oilPvt_->saturatedGasDissolutionFactor(regionIdx, Opm::scalarValue(T), Opm::scalarValue(p)))
-                {
-                    if (fluidState.saturation(gasPhaseIdx) < 1e-4) {
-                        // here comes the relatively expensive case: first calculate and then
-                        // interpolate between the saturated and undersaturated quantities to
-                        // avoid a discontinuity
-                        const auto& alpha = Opm::decay<LhsEval>(fluidState.saturation(gasPhaseIdx))/1e-4;
-                        const auto& bSat = oilPvt_->saturatedInverseFormationVolumeFactor(regionIdx, T, p);
-                        const auto& bUndersat = oilPvt_->inverseFormationVolumeFactor(regionIdx, T, p, Rs);
-                        return alpha*bSat + (1.0 - alpha)*bUndersat;
-                    }
-
-                    return oilPvt_->saturatedInverseFormationVolumeFactor(regionIdx, T, p);
-                }
-
+                const auto& Rs = Opm::BlackOil::template getRs_<ThisType, FluidState, LhsEval>(fluidState, regionIdx);       
                 return oilPvt_->inverseFormationVolumeFactor(regionIdx, T, p, Rs);
             }
 
@@ -713,22 +701,6 @@ public:
         case gasPhaseIdx: {
             if (enableVaporizedOil()) {
                 const auto& Rv = Opm::BlackOil::template getRv_<ThisType, FluidState, LhsEval>(fluidState, regionIdx);
-                if (fluidState.saturation(oilPhaseIdx) > 0.0
-                    && Rv >= (1.0 - 1e-10)*gasPvt_->saturatedOilVaporizationFactor(regionIdx, Opm::scalarValue(T), Opm::scalarValue(p)))
-                {
-                    if (fluidState.saturation(oilPhaseIdx) < 1e-4) {
-                        // here comes the relatively expensive case: first calculate and then
-                        // interpolate between the saturated and undersaturated quantities to
-                        // avoid a discontinuity
-                        const auto& alpha = Opm::decay<LhsEval>(fluidState.saturation(oilPhaseIdx))/1e-4;
-                        const auto& bSat = gasPvt_->saturatedInverseFormationVolumeFactor(regionIdx, T, p);
-                        const auto& bUndersat = gasPvt_->inverseFormationVolumeFactor(regionIdx, T, p, Rv);
-                        return alpha*bSat + (1.0 - alpha)*bUndersat;
-                    }
-
-                    return gasPvt_->saturatedInverseFormationVolumeFactor(regionIdx, T, p);
-                }
-
                 return gasPvt_->inverseFormationVolumeFactor(regionIdx, T, p, Rv);
             }
 
@@ -755,7 +727,9 @@ public:
     {
         assert(0 <= phaseIdx && phaseIdx <= numPhases);
         assert(0 <= regionIdx && regionIdx <= numRegions());
+        return inverseFormationVolumeFactor<FluidState, LhsEval>(fluidState, phaseIdx, regionIdx);
 
+        /*
         const auto& p = Opm::decay<LhsEval>(fluidState.pressure(phaseIdx));
         const auto& T = Opm::decay<LhsEval>(fluidState.temperature(phaseIdx));
 
@@ -765,6 +739,7 @@ public:
         case waterPhaseIdx: return waterPvt_->inverseFormationVolumeFactor(regionIdx, T, p);
         default: throw std::logic_error("Unhandled phase index "+std::to_string(phaseIdx));
         }
+        */
     }
 
     //! \copydoc BaseFluidSystem::fugacityCoefficient
@@ -777,116 +752,116 @@ public:
         assert(0 <= phaseIdx && phaseIdx <= numPhases);
         assert(0 <= compIdx && compIdx <= numComponents);
         assert(0 <= regionIdx && regionIdx <= numRegions());
+        throw std::logic_error("Fugacity for black oil model");
+        // const auto& p = Opm::decay<LhsEval>(fluidState.pressure(phaseIdx));
+        // const auto& T = Opm::decay<LhsEval>(fluidState.temperature(phaseIdx));
 
-        const auto& p = Opm::decay<LhsEval>(fluidState.pressure(phaseIdx));
-        const auto& T = Opm::decay<LhsEval>(fluidState.temperature(phaseIdx));
+        // // for the fugacity coefficient of the oil component in the oil phase, we use
+        // // some pseudo-realistic value for the vapor pressure to ease physical
+        // // interpretation of the results
+        // const LhsEval phi_oO = 20e3/p;
 
-        // for the fugacity coefficient of the oil component in the oil phase, we use
-        // some pseudo-realistic value for the vapor pressure to ease physical
-        // interpretation of the results
-        const LhsEval phi_oO = 20e3/p;
+        // // for the gas component in the gas phase, assume it to be an ideal gas
+        // const Scalar phi_gG = 1.0;
 
-        // for the gas component in the gas phase, assume it to be an ideal gas
-        const Scalar phi_gG = 1.0;
+        // // for the fugacity coefficient of the water component in the water phase, we use
+        // // the same approach as for the oil component in the oil phase
+        // const LhsEval phi_wW = 30e3/p;
 
-        // for the fugacity coefficient of the water component in the water phase, we use
-        // the same approach as for the oil component in the oil phase
-        const LhsEval phi_wW = 30e3/p;
+        // switch (phaseIdx) {
+        // case gasPhaseIdx: // fugacity coefficients for all components in the gas phase
+        //     switch (compIdx) {
+        //     case gasCompIdx:
+        //         return phi_gG;
 
-        switch (phaseIdx) {
-        case gasPhaseIdx: // fugacity coefficients for all components in the gas phase
-            switch (compIdx) {
-            case gasCompIdx:
-                return phi_gG;
+        //     // for the oil component, we calculate the Rv value for saturated gas and Rs
+        //     // for saturated oil, and compute the fugacity coefficients at the
+        //     // equilibrium. for this, we assume that in equilibrium the fugacities of the
+        //     // oil component is the same in both phases.
+        //     case oilCompIdx: {
+        //         if (!enableVaporizedOil())
+        //             // if there's no vaporized oil, the gas phase is assumed to be
+        //             // immiscible with the oil component
+        //             return phi_gG*1e6;
 
-            // for the oil component, we calculate the Rv value for saturated gas and Rs
-            // for saturated oil, and compute the fugacity coefficients at the
-            // equilibrium. for this, we assume that in equilibrium the fugacities of the
-            // oil component is the same in both phases.
-            case oilCompIdx: {
-                if (!enableVaporizedOil())
-                    // if there's no vaporized oil, the gas phase is assumed to be
-                    // immiscible with the oil component
-                    return phi_gG*1e6;
+        //         const auto& R_vSat = gasPvt_->saturatedOilVaporizationFactor(regionIdx, T, p);
+        //         const auto& X_gOSat = convertRvToXgO(R_vSat, regionIdx);
+        //         const auto& x_gOSat = convertXgOToxgO(X_gOSat, regionIdx);
 
-                const auto& R_vSat = gasPvt_->saturatedOilVaporizationFactor(regionIdx, T, p);
-                const auto& X_gOSat = convertRvToXgO(R_vSat, regionIdx);
-                const auto& x_gOSat = convertXgOToxgO(X_gOSat, regionIdx);
+        //         const auto& R_sSat = oilPvt_->saturatedGasDissolutionFactor(regionIdx, T, p);
+        //         const auto& X_oGSat = convertRsToXoG(R_sSat, regionIdx);
+        //         const auto& x_oGSat = convertXoGToxoG(X_oGSat, regionIdx);
+        //         const auto& x_oOSat = 1.0 - x_oGSat;
 
-                const auto& R_sSat = oilPvt_->saturatedGasDissolutionFactor(regionIdx, T, p);
-                const auto& X_oGSat = convertRsToXoG(R_sSat, regionIdx);
-                const auto& x_oGSat = convertXoGToxoG(X_oGSat, regionIdx);
-                const auto& x_oOSat = 1.0 - x_oGSat;
+        //         const auto& p_o = Opm::decay<LhsEval>(fluidState.pressure(oilPhaseIdx));
+        //         const auto& p_g = Opm::decay<LhsEval>(fluidState.pressure(gasPhaseIdx));
 
-                const auto& p_o = Opm::decay<LhsEval>(fluidState.pressure(oilPhaseIdx));
-                const auto& p_g = Opm::decay<LhsEval>(fluidState.pressure(gasPhaseIdx));
+        //         return phi_oO*p_o*x_oOSat / (p_g*x_gOSat);
+        //     }
 
-                return phi_oO*p_o*x_oOSat / (p_g*x_gOSat);
-            }
+        //     case waterCompIdx:
+        //         // the water component is assumed to be never miscible with the gas phase
+        //         return phi_gG*1e6;
 
-            case waterCompIdx:
-                // the water component is assumed to be never miscible with the gas phase
-                return phi_gG*1e6;
+        //     default:
+        //         throw std::logic_error("Invalid component index "+std::to_string(compIdx));
+        //     }
 
-            default:
-                throw std::logic_error("Invalid component index "+std::to_string(compIdx));
-            }
+        // case oilPhaseIdx: // fugacity coefficients for all components in the oil phase
+        //     switch (compIdx) {
+        //     case oilCompIdx:
+        //         return phi_oO;
 
-        case oilPhaseIdx: // fugacity coefficients for all components in the oil phase
-            switch (compIdx) {
-            case oilCompIdx:
-                return phi_oO;
+        //     // for the oil and water components, we proceed analogous to the gas and
+        //     // water components in the gas phase
+        //     case gasCompIdx: {
+        //         if (!enableDissolvedGas())
+        //             // if there's no dissolved gas, the oil phase is assumed to be
+        //             // immiscible with the gas component
+        //             return phi_oO*1e6;
 
-            // for the oil and water components, we proceed analogous to the gas and
-            // water components in the gas phase
-            case gasCompIdx: {
-                if (!enableDissolvedGas())
-                    // if there's no dissolved gas, the oil phase is assumed to be
-                    // immiscible with the gas component
-                    return phi_oO*1e6;
+        //         const auto& R_vSat = gasPvt_->saturatedOilVaporizationFactor(regionIdx, T, p);
+        //         const auto& X_gOSat = convertRvToXgO(R_vSat, regionIdx);
+        //         const auto& x_gOSat = convertXgOToxgO(X_gOSat, regionIdx);
+        //         const auto& x_gGSat = 1.0 - x_gOSat;
 
-                const auto& R_vSat = gasPvt_->saturatedOilVaporizationFactor(regionIdx, T, p);
-                const auto& X_gOSat = convertRvToXgO(R_vSat, regionIdx);
-                const auto& x_gOSat = convertXgOToxgO(X_gOSat, regionIdx);
-                const auto& x_gGSat = 1.0 - x_gOSat;
+        //         const auto& R_sSat = oilPvt_->saturatedGasDissolutionFactor(regionIdx, T, p);
+        //         const auto& X_oGSat = convertRsToXoG(R_sSat, regionIdx);
+        //         const auto& x_oGSat = convertXoGToxoG(X_oGSat, regionIdx);
 
-                const auto& R_sSat = oilPvt_->saturatedGasDissolutionFactor(regionIdx, T, p);
-                const auto& X_oGSat = convertRsToXoG(R_sSat, regionIdx);
-                const auto& x_oGSat = convertXoGToxoG(X_oGSat, regionIdx);
+        //         const auto& p_o = Opm::decay<LhsEval>(fluidState.pressure(oilPhaseIdx));
+        //         const auto& p_g = Opm::decay<LhsEval>(fluidState.pressure(gasPhaseIdx));
 
-                const auto& p_o = Opm::decay<LhsEval>(fluidState.pressure(oilPhaseIdx));
-                const auto& p_g = Opm::decay<LhsEval>(fluidState.pressure(gasPhaseIdx));
+        //         return phi_gG*p_g*x_gGSat / (p_o*x_oGSat);
+        //     }
 
-                return phi_gG*p_g*x_gGSat / (p_o*x_oGSat);
-            }
+        //     case waterCompIdx:
+        //         return phi_oO*1e6;
 
-            case waterCompIdx:
-                return phi_oO*1e6;
+        //     default:
+        //         throw std::logic_error("Invalid component index "+std::to_string(compIdx));
+        //     }
 
-            default:
-                throw std::logic_error("Invalid component index "+std::to_string(compIdx));
-            }
+        // case waterPhaseIdx: // fugacity coefficients for all components in the water phase
+        //     // the water phase fugacity coefficients are pretty simple: because the water
+        //     // phase is assumed to consist entirely from the water component, we just
+        //     // need to make sure that the fugacity coefficients for the other components
+        //     // are a few orders of magnitude larger than the one of the water
+        //     // component. (i.e., the affinity of the gas and oil components to the water
+        //     // phase is lower by a few orders of magnitude)
+        //     switch (compIdx) {
+        //     case waterCompIdx: return phi_wW;
+        //     case oilCompIdx: return 1.1e6*phi_wW;
+        //     case gasCompIdx: return 1e6*phi_wW;
+        //     default:
+        //         throw std::logic_error("Invalid component index "+std::to_string(compIdx));
+        //     }
 
-        case waterPhaseIdx: // fugacity coefficients for all components in the water phase
-            // the water phase fugacity coefficients are pretty simple: because the water
-            // phase is assumed to consist entirely from the water component, we just
-            // need to make sure that the fugacity coefficients for the other components
-            // are a few orders of magnitude larger than the one of the water
-            // component. (i.e., the affinity of the gas and oil components to the water
-            // phase is lower by a few orders of magnitude)
-            switch (compIdx) {
-            case waterCompIdx: return phi_wW;
-            case oilCompIdx: return 1.1e6*phi_wW;
-            case gasCompIdx: return 1e6*phi_wW;
-            default:
-                throw std::logic_error("Invalid component index "+std::to_string(compIdx));
-            }
+        // default:
+        //     throw std::logic_error("Invalid phase index "+std::to_string(phaseIdx));
+        // }
 
-        default:
-            throw std::logic_error("Invalid phase index "+std::to_string(phaseIdx));
-        }
-
-        throw std::logic_error("Unhandled phase or component index");
+        // throw std::logic_error("Unhandled phase or component index");
     }
 
     //! \copydoc BaseFluidSystem::viscosity
@@ -905,21 +880,21 @@ public:
         case oilPhaseIdx: {
             if (enableDissolvedGas()) {
                 const auto& Rs = Opm::BlackOil::template getRs_<ThisType, FluidState, LhsEval>(fluidState, regionIdx);
-                if (fluidState.saturation(gasPhaseIdx) > 0.0
-                    && Rs >= (1.0 - 1e-10)*oilPvt_->saturatedGasDissolutionFactor(regionIdx, Opm::scalarValue(T), Opm::scalarValue(p)))
-                {
-                    if (fluidState.saturation(gasPhaseIdx) < 1e-4) {
-                        // here comes the relatively expensive case: first calculate and then
-                        // interpolate between the saturated and undersaturated quantities to
-                        // avoid a discontinuity
-                        const auto& alpha = Opm::decay<LhsEval>(fluidState.saturation(gasPhaseIdx))/1e-4;
-                        const auto& muSat = oilPvt_->saturatedViscosity(regionIdx, T, p);
-                        const auto& muUndersat = oilPvt_->viscosity(regionIdx, T, p, Rs);
-                        return alpha*muSat + (1.0 - alpha)*muUndersat;
-                    }
+                // if (fluidState.saturation(gasPhaseIdx) > 0.0
+                //     && Rs >= (1.0 - 1e-10)*oilPvt_->saturatedGasDissolutionFactor(regionIdx, Opm::scalarValue(T), Opm::scalarValue(p)))
+                // {
+                //     if (fluidState.saturation(gasPhaseIdx) < 1e-4) {
+                //         // here comes the relatively expensive case: first calculate and then
+                //         // interpolate between the saturated and undersaturated quantities to
+                //         // avoid a discontinuity
+                //         const auto& alpha = Opm::decay<LhsEval>(fluidState.saturation(gasPhaseIdx))/1e-4;
+                //         const auto& muSat = oilPvt_->saturatedViscosity(regionIdx, T, p);
+                //         const auto& muUndersat = oilPvt_->viscosity(regionIdx, T, p, Rs);
+                //         return alpha*muSat + (1.0 - alpha)*muUndersat;
+                //     }
 
-                    return oilPvt_->saturatedViscosity(regionIdx, T, p);
-                }
+                //     return oilPvt_->saturatedViscosity(regionIdx, T, p);
+                // }
 
                 return oilPvt_->viscosity(regionIdx, T, p, Rs);
             }
@@ -931,21 +906,21 @@ public:
         case gasPhaseIdx: {
             if (enableVaporizedOil()) {
                 const auto& Rv = Opm::BlackOil::template getRv_<ThisType, FluidState, LhsEval>(fluidState, regionIdx);
-                if (fluidState.saturation(oilPhaseIdx) > 0.0
-                    && Rv >= (1.0 - 1e-10)*gasPvt_->saturatedOilVaporizationFactor(regionIdx, Opm::scalarValue(T), Opm::scalarValue(p)))
-                {
-                    if (fluidState.saturation(oilPhaseIdx) < 1e-4) {
-                        // here comes the relatively expensive case: first calculate and then
-                        // interpolate between the saturated and undersaturated quantities to
-                        // avoid a discontinuity
-                        const auto& alpha = Opm::decay<LhsEval>(fluidState.saturation(oilPhaseIdx))/1e-4;
-                        const auto& muSat = gasPvt_->saturatedViscosity(regionIdx, T, p);
-                        const auto& muUndersat = gasPvt_->viscosity(regionIdx, T, p, Rv);
-                        return alpha*muSat + (1.0 - alpha)*muUndersat;
-                    }
+                // if (fluidState.saturation(oilPhaseIdx) > 0.0
+                //     && Rv >= (1.0 - 1e-10)*gasPvt_->saturatedOilVaporizationFactor(regionIdx, Opm::scalarValue(T), Opm::scalarValue(p)))
+                // {
+                //     if (fluidState.saturation(oilPhaseIdx) < 1e-4) {
+                //         // here comes the relatively expensive case: first calculate and then
+                //         // interpolate between the saturated and undersaturated quantities to
+                //         // avoid a discontinuity
+                //         const auto& alpha = Opm::decay<LhsEval>(fluidState.saturation(oilPhaseIdx))/1e-4;
+                //         const auto& muSat = gasPvt_->saturatedViscosity(regionIdx, T, p);
+                //         const auto& muUndersat = gasPvt_->viscosity(regionIdx, T, p, Rv);
+                //         return alpha*muSat + (1.0 - alpha)*muUndersat;
+                //     }
 
-                    return gasPvt_->saturatedViscosity(regionIdx, T, p);
-                }
+                //     return gasPvt_->saturatedViscosity(regionIdx, T, p);
+                // }
 
                 return gasPvt_->viscosity(regionIdx, T, p, Rv);
             }
