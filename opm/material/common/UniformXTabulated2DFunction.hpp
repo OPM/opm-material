@@ -285,7 +285,7 @@ public:
         Evaluation shift = 0.0;
         // avoid proper constructor
         if(yPos_.size()>0){
-            if( do_left_  ){
+            if( doLeft_  ){
                 shift = yPos_[i+1]-yPos_[i];
             }else{
                 shift = yPos_[i+1]-yPos_[i];
@@ -510,7 +510,7 @@ public:
             }
             yPos_[i] = y;
         }
-        do_left_ = left;
+        doLeft_ = left;
     }
 
     
@@ -523,7 +523,7 @@ private:
     // the position of each vertical line on the x-axis
     std::vector<Scalar> xPos_;
     std::vector<Scalar> yPos_;
-    bool do_left_;
+    bool doLeft_;
 };
 } // namespace Opm
 
