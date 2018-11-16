@@ -18,12 +18,14 @@ declare -a downstreams
 downstreams=(opm-grid
              ewoms
              opm-simulators
+             opm-simulators-legacy
              opm-upscaling)
 
 declare -A downstreamRev
 downstreamRev[opm-grid]=master
 downstreamRev[ewoms]=master
 downstreamRev[opm-simulators]=master
+downstreamRev[opm-simulators-legacy]=master
 downstreamRev[opm-upscaling]=master
 
 # Clone opm-common
