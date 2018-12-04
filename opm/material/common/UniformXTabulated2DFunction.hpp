@@ -290,7 +290,11 @@ public:
             }else{
                 shift = yPos_[i+1]-yPos_[i];
                 auto yEnd = yPos_[i]*(1.0 - alpha) + yPos_[i+1]*alpha;
-                shift = shift*y/yEnd;
+                if (yEnd > 0.) {
+                    shift = shift*y/yEnd;
+                } else {
+                    shift = 0.;
+                }
             }
         }    
         auto ylower =  y-alpha*shift;
