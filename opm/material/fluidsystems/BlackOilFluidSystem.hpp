@@ -402,9 +402,9 @@ public:
     static const unsigned numComponents = 3;
 
     //! Index of the oil component
-    static const unsigned oilCompIdx = 0;
+    static const unsigned oilCompIdx = 1;
     //! Index of the water component
-    static const unsigned waterCompIdx = 1;
+    static const unsigned waterCompIdx = 0;
     //! Index of the gas component
     static const unsigned gasCompIdx = 2;
 
