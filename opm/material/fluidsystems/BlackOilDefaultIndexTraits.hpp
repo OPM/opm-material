@@ -36,17 +36,17 @@ namespace Opm {
 class BlackOilDefaultIndexTraits
 {
 public:
-    //! Index of the water phase
-    static const unsigned waterPhaseIdx = 0;
     //! Index of the oil phase
-    static const unsigned oilPhaseIdx = 1;
+    static const unsigned oilPhaseIdx = 0;
+    //! Index of the water phase
+    static const unsigned waterPhaseIdx = 1;
     //! Index of the gas phase
     static const unsigned gasPhaseIdx = 2;
 
-    //! Index of the oil component
-    static const unsigned oilCompIdx = 0;
     //! Index of the water component
-    static const unsigned waterCompIdx = 1;
+    static const unsigned waterCompIdx = 0;
+    //! Index of the oil component
+    static const unsigned oilCompIdx = 1;
     //! Index of the gas component
     static const unsigned gasCompIdx = 2;
 };
