@@ -79,7 +79,7 @@ specializationTemplate = \
 #include <opm/material/common/Valgrind.hpp>
 
 {% if numDerivs < 0 %}\
-#include <opm/material/common/FastSmallVector.hpp>
+#include <vector>
 {% else %}\
 #include <array>
 {% endif %}\
@@ -102,14 +102,14 @@ static constexpr int DynamicSize = -1;
  * \\brief Represents a function evaluation and its derivatives w.r.t. a
  *        run-time specified set of variables.
  */
-template <class ValueT, unsigned staticSize>
-class Evaluation<ValueT, DynamicSize, staticSize>
+template <class ValueT>
+class Evaluation<ValueT, DynamicSize>
 {% elif numDerivs == 0 %}\
 /*!
  * \\brief Represents a function evaluation and its derivatives w.r.t. a fixed set of
  *        variables.
  */
-template <class ValueT, int numDerivs, unsigned staticSize = 0>
+template <class ValueT, int numDerivs>
 class Evaluation
 {% else %}\
 template <class ValueT>
@@ -180,13 +180,8 @@ protected:
     void checkDefined_() const
     {
 #ifndef NDEBUG
-{% if numDerivs < 0 %}\
-        for (int i = dstart_(); i < dend_(); ++i)
-            Valgrind::CheckDefined(data_[i]);
-{% else %}\
        for (const auto& v: data_)
            Valgrind::CheckDefined(v);
-{% endif %}\
 #endif
     }
 
@@ -733,7 +728,7 @@ public:
 private:
 
 {% if numDerivs < 0 %}\
-    FastSmallVector<ValueT, staticSize> data_;
+    std::vector<ValueT> data_;
 {% elif numDerivs == 0 %}\
     std::array<ValueT, numDerivs + 1> data_;
 {% else %}\
@@ -743,58 +738,58 @@ private:
 
 {% if numDerivs == 0 %}\
 // the generic operators are only required for the unspecialized case
-template <class RhsValueType, class ValueType, int numVars, unsigned staticSize>
-bool operator<(const RhsValueType& a, const Evaluation<ValueType, numVars, staticSize>& b)
+template <class RhsValueType, class ValueType, int numVars>
+bool operator<(const RhsValueType& a, const Evaluation<ValueType, numVars>& b)
 { return b > a; }
 
-template <class RhsValueType, class ValueType, int numVars, unsigned staticSize>
-bool operator>(const RhsValueType& a, const Evaluation<ValueType, numVars, staticSize>& b)
+template <class RhsValueType, class ValueType, int numVars>
+bool operator>(const RhsValueType& a, const Evaluation<ValueType, numVars>& b)
 { return b < a; }
 
-template <class RhsValueType, class ValueType, int numVars, unsigned staticSize>
-bool operator<=(const RhsValueType& a, const Evaluation<ValueType, numVars, staticSize>& b)
+template <class RhsValueType, class ValueType, int numVars>
+bool operator<=(const RhsValueType& a, const Evaluation<ValueType, numVars>& b)
 { return b >= a; }
 
-template <class RhsValueType, class ValueType, int numVars, unsigned staticSize>
-bool operator>=(const RhsValueType& a, const Evaluation<ValueType, numVars, staticSize>& b)
+template <class RhsValueType, class ValueType, int numVars>
+bool operator>=(const RhsValueType& a, const Evaluation<ValueType, numVars>& b)
 { return b <= a; }
 
-template <class RhsValueType, class ValueType, int numVars, unsigned staticSize>
-bool operator!=(const RhsValueType& a, const Evaluation<ValueType, numVars, staticSize>& b)
+template <class RhsValueType, class ValueType, int numVars>
+bool operator!=(const RhsValueType& a, const Evaluation<ValueType, numVars>& b)
 { return a != b.value(); }
 
-template <class RhsValueType, class ValueType, int numVars, unsigned staticSize>
-Evaluation<ValueType, numVars, staticSize> operator+(const RhsValueType& a, const Evaluation<ValueType, numVars, staticSize>& b)
+template <class RhsValueType, class ValueType, int numVars>
+Evaluation<ValueType, numVars> operator+(const RhsValueType& a, const Evaluation<ValueType, numVars>& b)
 {
-    Evaluation<ValueType, numVars, staticSize> result(b);
+    Evaluation<ValueType, numVars> result(b);
     result += a;
     return result;
 }
 
-template <class RhsValueType, class ValueType, int numVars, unsigned staticSize>
-Evaluation<ValueType, numVars, staticSize> operator-(const RhsValueType& a, const Evaluation<ValueType, numVars, staticSize>& b)
+template <class RhsValueType, class ValueType, int numVars>
+Evaluation<ValueType, numVars> operator-(const RhsValueType& a, const Evaluation<ValueType, numVars>& b)
 {
     return -(b - a);
 }
 
-template <class RhsValueType, class ValueType, int numVars, unsigned staticSize>
-Evaluation<ValueType, numVars, staticSize> operator/(const RhsValueType& a, const Evaluation<ValueType, numVars, staticSize>& b)
+template <class RhsValueType, class ValueType, int numVars>
+Evaluation<ValueType, numVars> operator/(const RhsValueType& a, const Evaluation<ValueType, numVars>& b)
 {
-    Evaluation<ValueType, numVars, staticSize> tmp(a);
+    Evaluation<ValueType, numVars> tmp(a);
     tmp /= b;
     return tmp;
 }
 
-template <class RhsValueType, class ValueType, int numVars, unsigned staticSize>
-Evaluation<ValueType, numVars, staticSize> operator*(const RhsValueType& a, const Evaluation<ValueType, numVars, staticSize>& b)
+template <class RhsValueType, class ValueType, int numVars>
+Evaluation<ValueType, numVars> operator*(const RhsValueType& a, const Evaluation<ValueType, numVars>& b)
 {
-    Evaluation<ValueType, numVars, staticSize> result(b);
+    Evaluation<ValueType, numVars> result(b);
     result *= a;
     return result;
 }
 
-template <class ValueType, int numVars, unsigned staticSize>
-std::ostream& operator<<(std::ostream& os, const Evaluation<ValueType, numVars, staticSize>& eval)
+template <class ValueType, int numVars>
+std::ostream& operator<<(std::ostream& os, const Evaluation<ValueType, numVars>& eval)
 {
     os << eval.value();
     return os;
@@ -802,20 +797,20 @@ std::ostream& operator<<(std::ostream& os, const Evaluation<ValueType, numVars, 
 
 {% endif %}\
 {% if numDerivs < 0 %}\
-template <class Scalar, unsigned staticSize = 0>
-using DynamicEvaluation = Evaluation<Scalar, DynamicSize, staticSize>;
+template <class Scalar>
+using DynamicEvaluation = Evaluation<Scalar, DynamicSize>;
 
 {% endif %}\
 } // namespace DenseAd
 {% if numDerivs < 0 %}\
 
-template <class Scalar, unsigned staticSize>
-Opm::DenseAd::Evaluation<Scalar, -1, staticSize> constant(int numDerivatives, const Scalar& value)
-{ return Opm::DenseAd::Evaluation<Scalar, -1, staticSize>::createConstant(numDerivatives, value); }
+template <class Scalar>
+Opm::DenseAd::Evaluation<Scalar, -1> constant(int numDerivatives, const Scalar& value)
+{ return Opm::DenseAd::Evaluation<Scalar, -1>::createConstant(numDerivatives, value); }
 
-template <class Scalar, unsigned staticSize>
-Opm::DenseAd::Evaluation<Scalar, -1, staticSize> variable(int numDerivatives, const Scalar& value, unsigned idx)
-{ return Opm::DenseAd::Evaluation<Scalar, -1, staticSize>::createVariable(numDerivatives, value, idx); }
+template <class Scalar>
+Opm::DenseAd::Evaluation<Scalar, -1> variable(int numDerivatives, const Scalar& value, unsigned idx)
+{ return Opm::DenseAd::Evaluation<Scalar, -1>::createVariable(numDerivatives, value, idx); }
 
 {% endif %}\
 } // namespace Opm
@@ -825,11 +820,11 @@ Opm::DenseAd::Evaluation<Scalar, -1, staticSize> variable(int numDerivatives, co
 #include <dune/common/ftraits.hh>
 
 namespace Dune {
-template <class ValueType, int numVars, unsigned staticSize>
-struct FieldTraits<Opm::DenseAd::Evaluation<ValueType, numVars, staticSize> >
+template <class ValueType, int numVars>
+struct FieldTraits<Opm::DenseAd::Evaluation<ValueType, numVars> >
 {
 public:
-    typedef Opm::DenseAd::Evaluation<ValueType, numVars, staticSize> field_type;
+    typedef Opm::DenseAd::Evaluation<ValueType, numVars> field_type;
     // setting real_type to field_type here potentially leads to slightly worse
     // performance, but at least it makes things compile.
     typedef field_type real_type;
@@ -840,8 +835,6 @@ public:
 #include "EvaluationSpecializations.hpp"
 
 #endif // OPM_DENSEAD_EVALUATION_HPP
-{% elif numDerivs < 0 %}\
-#endif // OPM_DENSEAD_EVALUATION_DYNAMIC_HPP
 {% else %}\
 #endif // OPM_DENSEAD_EVALUATION{{numDerivs}}_HPP
 {% endif %}\
