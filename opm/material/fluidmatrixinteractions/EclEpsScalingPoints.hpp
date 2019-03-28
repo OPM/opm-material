@@ -80,6 +80,10 @@ public:
 
         retrieveGridPropertyData_(&swl, eclState, kwPrefix+"SWL");
         retrieveGridPropertyData_(&sgl, eclState, kwPrefix+"SGL");
+
+        retrieveGridPropertyData_(&swlpc, eclState, kwPrefix+"SWLPC");
+        retrieveGridPropertyData_(&sglpc, eclState, kwPrefix+"SGLPC");
+
         retrieveGridPropertyData_(&swcr, eclState, kwPrefix+"SWCR");
         retrieveGridPropertyData_(&sgcr, eclState, kwPrefix+"SGCR");
         retrieveGridPropertyData_(&sowcr, eclState, kwPrefix+"SOWCR");
@@ -114,6 +118,8 @@ public:
 
     const DoubleData* swl;
     const DoubleData* sgl;
+    const DoubleData* swlpc;
+    const DoubleData* sglpc;
     const DoubleData* swcr;
     const DoubleData* sgcr;
     const DoubleData* sowcr;
@@ -136,11 +142,11 @@ private:
     // mentioned in the deck. (saves memory.)
     void retrieveGridPropertyData_(const DoubleData **data,
                                    const Opm::EclipseState& eclState,
-                                   const std::string& properyName)
+                                   const std::string& propertyName)
     {
-        (*data) = 0;
-        if (eclState.get3DProperties().hasDeckDoubleGridProperty(properyName))
-            (*data) = &eclState.get3DProperties().getDoubleGridProperty(properyName).getData();
+        (*data) = nullptr;
+        if (eclState.get3DProperties().hasDeckDoubleGridProperty(propertyName))
+            (*data) = &eclState.get3DProperties().getDoubleGridProperty(propertyName).getData();
     }
 #endif
 };
@@ -160,6 +166,8 @@ struct EclEpsScalingPointsInfo
     Scalar Sgl; // gas
     Scalar Sowl; // oil for the oil-water system
     Scalar Sogl; // oil for the gas-oil system
+    Scalar SwlPc; // oil for capillary pressure
+    Scalar SglPc; // gas for capillary pressure
 
     // critical water and gas saturations
     Scalar krCriticalEps; // relative permeability below which a saturation is considered
@@ -194,6 +202,8 @@ struct EclEpsScalingPointsInfo
     {
         std::cout << "    Swl: " << Swl << "\n"
                   << "    Sgl: " << Sgl << "\n"
+                  << "    SwlPc: " << SwlPc << "\n"
+                  << "    SglPc: " << SglPc << "\n"
                   << "    Sowl: " << Sowl << "\n"
                   << "    Sogl: " << Sogl << "\n"
                   << "    Swcr: " << Swcr << "\n"
@@ -250,6 +260,7 @@ struct EclEpsScalingPointsInfo
 
         if (!hasWater) {
             Swl = 0.0;
+            SwlPc = 0.0;
             Swu = 0.0;
             Swcr = 0.0;
             bool family1 = (!sgofTables.empty() || !slgofTables.empty());
@@ -337,6 +348,12 @@ struct EclEpsScalingPointsInfo
         // explicitly specified by the corresponding keyword.
         extractGridPropertyValue_(Swl, epsProperties.swl, cartesianCellIdx);
         extractGridPropertyValue_(Sgl, epsProperties.sgl, cartesianCellIdx);
+
+        SwlPc = Swl;
+        SglPc = Sgl;
+        extractGridPropertyValue_(SwlPc, epsProperties.swlpc, cartesianCellIdx);
+        extractGridPropertyValue_(SglPc, epsProperties.sglpc, cartesianCellIdx);
+
         extractGridPropertyValue_(Swcr, epsProperties.swcr, cartesianCellIdx);
         extractGridPropertyValue_(Sgcr, epsProperties.sgcr, cartesianCellIdx);
         extractGridPropertyValue_(Sowcr, epsProperties.sowcr, cartesianCellIdx);
@@ -678,7 +695,7 @@ public:
     {
         if (epsSystemType == EclOilWaterSystem) {
             // saturation scaling for capillary pressure
-            saturationPcPoints_[0] = epsInfo.Swl;
+            saturationPcPoints_[0] = epsInfo.SwlPc;
             saturationPcPoints_[1] = epsInfo.Swu;
 
             // krw saturation scaling endpoints
@@ -718,7 +735,7 @@ public:
 
             // saturation scaling for capillary pressure
             saturationPcPoints_[0] = 1.0 - epsInfo.Sgu;
-            saturationPcPoints_[1] = 1.0 - epsInfo.Sgl;
+            saturationPcPoints_[1] = 1.0 - epsInfo.SglPc;
 
             // krw saturation scaling endpoints
             if (config.enableThreePointKrSatScaling()) {
