@@ -500,19 +500,15 @@ public:
                                              const Evaluation& /*temperature*/,
                                              const Evaluation& pressure,
                                              const Evaluation& oilSaturation,
-                                             Evaluation maxOilSaturation) const
+                                             const Evaluation& maxOilSaturation) const
     {
         Evaluation tmp =
             saturatedGasDissolutionFactorTable_[regionIdx].eval(pressure, /*extrapolate=*/true);
 
         // apply the vaporization parameters for the gas phase (cf. the Eclipse VAPPARS
         // keyword)
-        maxOilSaturation = Opm::min(maxOilSaturation, Scalar(1.0));
-        if (vapPar2_ > 0.0 && maxOilSaturation > 0.01 && oilSaturation < maxOilSaturation) {
-            static const Scalar eps = 0.001;
-            const Evaluation& So = Opm::max(oilSaturation, eps);
-            tmp *= Opm::max(1e-3, Opm::pow(So/maxOilSaturation, vapPar2_));
-        }
+        if (vapPar2_ > 0.0 && oilSaturation < maxOilSaturation)
+            tmp *= Opm::max(1e-3, Opm::pow(oilSaturation/maxOilSaturation, vapPar2_));
 
         return tmp;
     }
