@@ -448,10 +448,11 @@ private:
             + (oilEnabled?1:0)
             + (waterEnabled?1:0);
 
-        if (numEnabled < 2)
+        if(numEnabled ==0){
             throw std::runtime_error("At least two fluid phases must be enabled. (Is: "+std::to_string(numEnabled)+")");
-
-        if (numEnabled == 2) {
+        }else if   (numEnabled == 1){
+            threePhaseApproach_ = Opm::EclMultiplexerApproach::EclOnePhaseApproach;
+        } else if (numEnabled == 2) {
             threePhaseApproach_ = Opm::EclTwoPhaseApproach;
             if (!gasEnabled)
                 twoPhaseApproach_ = Opm::EclTwoPhaseOilWater;

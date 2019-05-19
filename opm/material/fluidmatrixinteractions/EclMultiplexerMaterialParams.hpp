@@ -44,7 +44,8 @@ enum EclMultiplexerApproach {
     EclDefaultApproach,
     EclStone1Approach,
     EclStone2Approach,
-    EclTwoPhaseApproach
+    EclTwoPhaseApproach,
+    EclOnePhaseApproach
 };
 
 /*!
