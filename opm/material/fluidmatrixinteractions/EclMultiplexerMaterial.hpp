@@ -407,7 +407,11 @@ public:
                                                      params.template getRealParams<EclTwoPhaseApproach>(),
                                                      fluidState);
             break;
+        case EclOnePhaseApproach:
+            values[0] = 1.0;
+            break;
         }
+        throw std::logic_error("Not implemented: relativePermeability"); 
     }
 
     /*!
