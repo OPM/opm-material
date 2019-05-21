@@ -410,8 +410,10 @@ public:
         case EclOnePhaseApproach:
             values[0] = 1.0;
             break;
+        default:
+            throw std::logic_error("Not implemented: relativePermeability"); 
         }
-        throw std::logic_error("Not implemented: relativePermeability"); 
+        
     }
 
     /*!
