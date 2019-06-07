@@ -216,7 +216,7 @@ public:
 {% if numDerivs < 0 %}\
     // create a "blank" dynamic evaluation
     explicit Evaluation(int numDerivatives)
-        : data_(1 + numDerivatives)
+        : data_(1 + numDerivatives, 0.0)
     {}
 
     // create a dynamic evaluation which represents a constant function
