@@ -22,10 +22,10 @@
 */
 /*!
  * \file
- * \copydoc Opm::ConstantCompressibilityWaterPvt
+ * \copydoc Opm::ConstantCompressibilitySaltWaterPvt
  */
-#ifndef OPM_CONSTANT_COMPRESSIBILITY_WATER_PVT_HPP
-#define OPM_CONSTANT_COMPRESSIBILITY_WATER_PVT_HPP
+#ifndef OPM_CONSTANT_COMPRESSIBILITY_SALTWATER_PVT_HPP
+#define OPM_CONSTANT_COMPRESSIBILITY_SALTWATER_PVT_HPP
 
 #include <opm/material/common/Tabulated1DFunction.hpp>
 
@@ -35,54 +35,77 @@
 #include <opm/parser/eclipse/Deck/DeckRecord.hpp>
 #include <opm/parser/eclipse/Deck/DeckItem.hpp>
 #include <opm/parser/eclipse/EclipseState/EclipseState.hpp>
+#include <opm/parser/eclipse/EclipseState/Tables/PvtwsaltTable.hpp>
 #endif
 
 #include <vector>
 
 namespace Opm {
+template <class Scalar, bool enableThermal, bool enableSaltWater>
+class WaterPvtMultiplexer;
 /*!
  * \brief This class represents the Pressure-Volume-Temperature relations of the gas phase
  *        without vaporized oil.
  */
 template <class Scalar>
-class ConstantCompressibilityWaterPvt
+class ConstantCompressibilitySaltWaterPvt
 {
     typedef Opm::Tabulated1DFunction<Scalar> TabulatedOneDFunction;
+    typedef typename Opm::Tabulated1DFunction<Scalar> TabulatedFunction;
     typedef std::vector<std::pair<Scalar, Scalar> > SamplingPoints;
 
 public:
 #if HAVE_ECL_INPUT
     /*!
      * \brief Sets the pressure-dependent water viscosity and density
-     *        using a table stemming from the Eclipse PVTW keyword.
+     *        using a table stemming from the Eclipse PVTWSALT keyword.
      */
-    void initFromDeck(const Deck& deck, const EclipseState& /*eclState*/)
+    void initFromDeck(const Deck& deck, const EclipseState& eclState)
     {
-        const auto& pvtwKeyword = deck.getKeyword("PVTW");
+        const auto& tableManager = eclState.getTableManager();
+        size_t numRegions = tableManager.getTabdims().getNumPVTTables();
         const auto& densityKeyword = deck.getKeyword("DENSITY");
 
-        assert(pvtwKeyword.size() == densityKeyword.size());
+        formationVolumeTables_.resize(numRegions);
+        compressibilityTables_.resize(numRegions);
+        viscosityTables_.resize(numRegions);
+        viscosibilityTables_.resize(numRegions);
+        referencePressure_.resize(numRegions);
 
-        size_t numRegions = pvtwKeyword.size();
-        setNumRegions(numRegions);
+        const auto& pvtwsaltTables = tableManager.getPvtwSaltTables();
+        if(!pvtwsaltTables.empty()){
+            assert(numRegions == pvtwsaltTables.size());
+            for (unsigned regionIdx = 0; regionIdx < numRegions; ++ regionIdx) {
+                const auto& pvtwsaltTable = pvtwsaltTables[regionIdx];
+                const auto& c = pvtwsaltTable.getSaltConcentrationColumn();
 
-        for (unsigned regionIdx = 0; regionIdx < numRegions; ++ regionIdx) {
-            auto pvtwRecord = pvtwKeyword.getRecord(regionIdx);
+                const auto& B = pvtwsaltTable.getFormationVolumeFactorColumn();
+                formationVolumeTables_[regionIdx].setXYContainers(c, B);
+
+                const auto& compressibility = pvtwsaltTable.getCompressibilityColumn();
+                compressibilityTables_[regionIdx].setXYContainers(c, compressibility);
+
+                const auto& viscositytable = pvtwsaltTable.getViscosityColumn();
+                viscosityTables_[regionIdx].setXYContainers(c, viscositytable);
+
+                const auto& viscosibility = pvtwsaltTable.getViscosibilityColumn();
+                viscosibilityTables_[regionIdx].setXYContainers(c, viscosibility);
+                referencePressure_[regionIdx] = pvtwsaltTable.getReferencePressureValue();
+            }
+        }
+        else {
+            throw std::runtime_error("PVTWSALT must be specified in SALTWATER runs\n");
+        }
+
+
+        size_t numPvtwRegions = numRegions;
+        setNumRegions(numPvtwRegions);
+
+        for (unsigned regionIdx = 0; regionIdx < numPvtwRegions; ++ regionIdx) {
             auto densityRecord = densityKeyword.getRecord(regionIdx);
 
             waterReferenceDensity_[regionIdx] =
                 densityRecord.getItem("WATER").getSIDouble(0);
-
-            waterReferencePressure_[regionIdx] =
-                pvtwRecord.getItem("P_REF").getSIDouble(0);
-            waterReferenceFormationVolumeFactor_[regionIdx] =
-                pvtwRecord.getItem("WATER_VOL_FACTOR").getSIDouble(0);
-            waterCompressibility_[regionIdx] =
-                pvtwRecord.getItem("WATER_COMPRESSIBILITY").getSIDouble(0);
-            waterViscosity_[regionIdx] =
-                pvtwRecord.getItem("WATER_VISCOSITY").getSIDouble(0);
-            waterViscosibility_[regionIdx] =
-                pvtwRecord.getItem("WATER_VISCOSIBILITY").getSIDouble(0);
         }
 
         initEnd();
@@ -92,16 +115,9 @@ public:
     void setNumRegions(size_t numRegions)
     {
         waterReferenceDensity_.resize(numRegions);
-        waterReferencePressure_.resize(numRegions);
-        waterReferenceFormationVolumeFactor_.resize(numRegions);
-        waterCompressibility_.resize(numRegions);
-        waterViscosity_.resize(numRegions);
-        waterViscosibility_.resize(numRegions);
 
         for (unsigned regionIdx = 0; regionIdx < numRegions; ++regionIdx) {
             setReferenceDensities(regionIdx, 650.0, 1.0, 1000.0);
-            setReferenceFormationVolumeFactor(regionIdx, 1.0);
-            setReferencePressure(regionIdx, 1e5);
         }
     }
 
@@ -115,43 +131,11 @@ public:
     { waterReferenceDensity_[regionIdx] = rhoRefWater; }
 
     /*!
-     * \brief Set the water reference pressure [Pa]
-     */
-    void setReferencePressure(unsigned regionIdx, Scalar p)
-    { waterReferencePressure_[regionIdx] = p; }
-
-    /*!
-     * \brief Set the viscosity and "viscosibility" of the water phase.
-     */
-    void setViscosity(unsigned regionIdx, Scalar muw, Scalar waterViscosibility = 0.0)
-    {
-        waterViscosity_[regionIdx] = muw;
-        waterViscosibility_[regionIdx] = waterViscosibility;
-    }
-
-    /*!
-     * \brief Set the compressibility of the water phase.
-     */
-    void setCompressibility(unsigned regionIdx, Scalar waterCompressibility)
-    { waterCompressibility_[regionIdx] = waterCompressibility; }
-
-    /*!
-     * \brief Set the water reference formation volume factor [-]
-     */
-    void setReferenceFormationVolumeFactor(unsigned regionIdx, Scalar BwRef)
-    { waterReferenceFormationVolumeFactor_[regionIdx] = BwRef; }
-
-    /*!
-     * \brief Set the water "viscosibility" [1/ (Pa s)]
-     */
-    void setViscosibility(unsigned regionIdx, Scalar muComp)
-    { waterViscosibility_[regionIdx] = muComp; }
-
-    /*!
      * \brief Finish initializing the water phase PVT properties.
      */
     void initEnd()
     { }
+
 
     /*!
      * \brief Return the number of PVT regions which are considered by this PVT-object.
@@ -170,7 +154,6 @@ public:
         throw std::runtime_error("Requested the enthalpy of water but the thermal option is not enabled");
     }
 
-
     /*!
      * \brief Returns the dynamic viscosity [Pa s] of the fluid phase given a set of parameters.
      */
@@ -178,16 +161,19 @@ public:
     Evaluation viscosity(unsigned regionIdx,
                          const Evaluation& temperature,
                          const Evaluation& pressure,
-                         const Evaluation& saltconcentration) const
+                         const Evaluation& saltwaterconcentration) const
     {
-        Scalar BwMuwRef = waterViscosity_[regionIdx]*waterReferenceFormationVolumeFactor_[regionIdx];
-        const Evaluation& bw = inverseFormationVolumeFactor(regionIdx, temperature, pressure, saltconcentration);
+        // cf. ECLiPSE 2013.2 technical description, p. 114
+        Scalar pRef = referencePressure_[regionIdx];
+        const Evaluation C = compressibilityTables_[regionIdx].eval(saltwaterconcentration, /*extrapolate=*/true);
+        const Evaluation Cv = viscosibilityTables_[regionIdx].eval(saltwaterconcentration, /*extrapolate=*/true);
+        const Evaluation BwRef = formationVolumeTables_[regionIdx].eval(saltwaterconcentration, /*extrapolate=*/true);
+        const Evaluation Y = (C-Cv)* (pressure - pRef);
+        Evaluation MuwRef = viscosityTables_[regionIdx].eval(saltwaterconcentration, /*extrapolate=*/true);
 
-        Scalar pRef = waterReferencePressure_[regionIdx];
-        const Evaluation& Y =
-            (waterCompressibility_[regionIdx] - waterViscosibility_[regionIdx])
-            * (pressure - pRef);
-        return BwMuwRef*bw/(1 + Y*(1 + Y/2));
+        const Evaluation& bw = inverseFormationVolumeFactor(regionIdx, temperature, pressure, saltwaterconcentration);
+
+        return MuwRef*BwRef*bw/(1 + Y*(1 + Y/2));
     }
 
     /*!
@@ -197,25 +183,26 @@ public:
     Evaluation inverseFormationVolumeFactor(unsigned regionIdx,
                                             const Evaluation& /*temperature*/,
                                             const Evaluation& pressure,
-                                            const Evaluation& /*saltconcentration*/) const
+                                            const Evaluation& saltwaterconcentration) const
     {
-        // cf. ECLiPSE 2011 technical description, p. 116
-        Scalar pRef = waterReferencePressure_[regionIdx];
-        const Evaluation& X = waterCompressibility_[regionIdx]*(pressure - pRef);
+        Scalar pRef = referencePressure_[regionIdx];
 
-        Scalar BwRef = waterReferenceFormationVolumeFactor_[regionIdx];
+        const Evaluation BwRef = formationVolumeTables_[regionIdx].eval(saltwaterconcentration, /*extrapolate=*/true);
+        const Evaluation C = compressibilityTables_[regionIdx].eval(saltwaterconcentration, /*extrapolate=*/true);
+        const Evaluation X = C * (pressure - pRef);
 
-        // TODO (?): consider the salt concentration of the brine
         return (1.0 + X*(1.0 + X/2.0))/BwRef;
+
     }
 
 private:
+    std::vector<TabulatedFunction> formationVolumeTables_;
+    std::vector<TabulatedFunction> compressibilityTables_;
+    std::vector<TabulatedFunction> viscosityTables_;
+    std::vector<TabulatedFunction> viscosibilityTables_;
+    std::vector<Scalar> referencePressure_;
     std::vector<Scalar> waterReferenceDensity_;
-    std::vector<Scalar> waterReferencePressure_;
-    std::vector<Scalar> waterReferenceFormationVolumeFactor_;
-    std::vector<Scalar> waterCompressibility_;
-    std::vector<Scalar> waterViscosity_;
-    std::vector<Scalar> waterViscosibility_;
+
 };
 
 } // namespace Opm

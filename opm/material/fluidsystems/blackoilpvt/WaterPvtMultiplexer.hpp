@@ -28,12 +28,18 @@
 #define OPM_WATER_PVT_MULTIPLEXER_HPP
 
 #include "ConstantCompressibilityWaterPvt.hpp"
+#include "ConstantCompressibilitySaltWaterPvt.hpp"
 #include "WaterPvtThermal.hpp"
 
 #define OPM_WATER_PVT_MULTIPLEXER_CALL(codeToCall)                      \
     switch (approach_) {                                                \
     case ConstantCompressibilityWaterPvt: {                             \
         auto& pvtImpl = getRealPvt<ConstantCompressibilityWaterPvt>();  \
+        codeToCall;                                                     \
+        break;                                                          \
+    }                                                                   \
+    case ConstantCompressibilitySaltWaterPvt: {                             \
+        auto& pvtImpl = getRealPvt<ConstantCompressibilitySaltWaterPvt>();  \
         codeToCall;                                                     \
         break;                                                          \
     }                                                                   \
@@ -51,7 +57,7 @@ namespace Opm {
  * \brief This class represents the Pressure-Volume-Temperature relations of the water
  *        phase in the black-oil model.
  */
-template <class Scalar, bool enableThermal = true>
+template <class Scalar, bool enableThermal = true, bool enableSaltWater = true>
 class WaterPvtMultiplexer
 {
 public:
@@ -59,6 +65,7 @@ public:
 
     enum WaterPvtApproach {
         NoWaterPvt,
+        ConstantCompressibilitySaltWaterPvt,
         ConstantCompressibilityWaterPvt,
         ThermalWaterPvt
     };
@@ -73,6 +80,10 @@ public:
         switch (approach_) {
         case ConstantCompressibilityWaterPvt: {
             delete &getRealPvt<ConstantCompressibilityWaterPvt>();
+            break;
+        }
+        case ConstantCompressibilitySaltWaterPvt: {
+            delete &getRealPvt<ConstantCompressibilitySaltWaterPvt>();
             break;
         }
         case ThermalWaterPvt: {
@@ -100,6 +111,8 @@ public:
             setApproach(ThermalWaterPvt);
         else if (deck.hasKeyword("PVTW"))
             setApproach(ConstantCompressibilityWaterPvt);
+        else if (enableSaltWater && deck.hasKeyword("PVTWSALT"))
+            setApproach(ConstantCompressibilitySaltWaterPvt);
 
         OPM_WATER_PVT_MULTIPLEXER_CALL(pvtImpl.initFromDeck(deck, eclState));
     }
@@ -130,7 +143,37 @@ public:
     Evaluation viscosity(unsigned regionIdx,
                          const Evaluation& temperature,
                          const Evaluation& pressure) const
-    { OPM_WATER_PVT_MULTIPLEXER_CALL(return pvtImpl.viscosity(regionIdx, temperature, pressure)); return 0; }
+    {
+       // assert(realWaterPvt_ != ConstantCompressibilitySaltWaterPvt );
+        const Evaluation saltconcentration = 0.0;
+        OPM_WATER_PVT_MULTIPLEXER_CALL(return pvtImpl.viscosity(regionIdx, temperature, pressure, saltconcentration));
+        return 0;
+    }
+
+    /*!
+     * \brief Returns the dynamic viscosity [Pa s] of the fluid phase given a set of parameters.
+     */
+    template <class Evaluation>
+    Evaluation viscosity(unsigned regionIdx,
+                         const Evaluation& temperature,
+                         const Evaluation& pressure,
+                         const Evaluation& saltconcentration) const
+    {
+        OPM_WATER_PVT_MULTIPLEXER_CALL(return pvtImpl.viscosity(regionIdx, temperature, pressure, saltconcentration));
+        return 0;
+    }
+
+    /*!
+     * \brief Returns the formation volume factor [-] of the fluid phase.
+     */
+    template <class Evaluation>
+    Evaluation inverseFormationVolumeFactor(unsigned regionIdx,
+                                            const Evaluation& temperature,
+                                            const Evaluation& pressure,
+                                            const Evaluation& saltconcentration) const
+    {   OPM_WATER_PVT_MULTIPLEXER_CALL(return pvtImpl.inverseFormationVolumeFactor(regionIdx, temperature, pressure, saltconcentration));
+        return 0;
+    }
 
     /*!
      * \brief Returns the formation volume factor [-] of the fluid phase.
@@ -139,13 +182,21 @@ public:
     Evaluation inverseFormationVolumeFactor(unsigned regionIdx,
                                             const Evaluation& temperature,
                                             const Evaluation& pressure) const
-    { OPM_WATER_PVT_MULTIPLEXER_CALL(return pvtImpl.inverseFormationVolumeFactor(regionIdx, temperature, pressure)); return 0; }
+    {
+        const Evaluation saltconcentration = 0.0;
+        OPM_WATER_PVT_MULTIPLEXER_CALL(return pvtImpl.inverseFormationVolumeFactor(regionIdx, temperature, pressure, saltconcentration));
+        return 0;
+    }
 
     void setApproach(WaterPvtApproach appr)
     {
         switch (appr) {
         case ConstantCompressibilityWaterPvt:
             realWaterPvt_ = new Opm::ConstantCompressibilityWaterPvt<Scalar>;
+            break;
+
+        case ConstantCompressibilitySaltWaterPvt:
+            realWaterPvt_ = new Opm::ConstantCompressibilitySaltWaterPvt<Scalar>;
             break;
 
         case ThermalWaterPvt:
@@ -180,6 +231,20 @@ public:
     {
         assert(approach() == approachV);
         return *static_cast<Opm::ConstantCompressibilityWaterPvt<Scalar>* >(realWaterPvt_);
+    }
+
+    template <WaterPvtApproach approachV>
+    typename std::enable_if<approachV == ConstantCompressibilitySaltWaterPvt, Opm::ConstantCompressibilitySaltWaterPvt<Scalar> >::type& getRealPvt()
+    {
+    assert(approach() == approachV);
+    return *static_cast<Opm::ConstantCompressibilitySaltWaterPvt<Scalar>* >(realWaterPvt_);
+    }
+
+    template <WaterPvtApproach approachV>
+    typename std::enable_if<approachV == ConstantCompressibilitySaltWaterPvt, const Opm::ConstantCompressibilitySaltWaterPvt<Scalar> >::type& getRealPvt() const
+    {
+    assert(approach() == approachV);
+    return *static_cast<Opm::ConstantCompressibilitySaltWaterPvt<Scalar>* >(realWaterPvt_);
     }
 
     template <WaterPvtApproach approachV>
