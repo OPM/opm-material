@@ -33,10 +33,8 @@
 #include <opm/material/common/UniformXTabulated2DFunction.hpp>
 #include <opm/material/common/Tabulated1DFunction.hpp>
 
-#if HAVE_ECL_INPUT
 #include <opm/parser/eclipse/EclipseState/EclipseState.hpp>
 #include <opm/parser/eclipse/EclipseState/Tables/TableManager.hpp>
-#endif
 
 namespace Opm {
 
@@ -57,7 +55,6 @@ public:
         vapPar1_ = 0.0;
     }
 
-#if HAVE_ECL_INPUT
     /*!
      * \brief Initialize the parameters for wet gas using an ECL deck.
      *
@@ -229,7 +226,6 @@ private:
     }
 
 public:
-#endif // HAVE_ECL_INPUT
 
     void setNumRegions(size_t numRegions)
     {

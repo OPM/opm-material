@@ -33,16 +33,12 @@
 #include <opm/material/common/UniformXTabulated2DFunction.hpp>
 #include <opm/material/common/Tabulated1DFunction.hpp>
 
-#if HAVE_ECL_INPUT
 #include <opm/parser/eclipse/Deck/Deck.hpp>
 #include <opm/parser/eclipse/EclipseState/EclipseState.hpp>
 #include <opm/parser/eclipse/EclipseState/Tables/SimpleTable.hpp>
 #include <opm/parser/eclipse/EclipseState/Tables/TableManager.hpp>
-#endif
 
-#if HAVE_OPM_COMMON
 #include <opm/common/OpmLog/OpmLog.hpp>
-#endif
 
 namespace Opm {
 /*!
@@ -62,7 +58,6 @@ public:
         vapPar2_ = 0.0;
     }
 
-#if HAVE_ECL_INPUT
     /*!
      * \brief Initialize the oil parameters via the data specified by the PVTO ECL keyword.
      */
@@ -232,7 +227,6 @@ private:
     }
 
 public:
-#endif // HAVE_ECL_INPUT
 
     void setNumRegions(size_t numRegions)
     {

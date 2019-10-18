@@ -30,10 +30,6 @@
  */
 #include "config.h"
 
-#if !HAVE_ECL_INPUT
-#error "The test for EclMaterialLawManager requires eclipse input support in opm-common"
-#endif
-
 #include <opm/material/fluidmatrixinteractions/EclMaterialLawManager.hpp>
 #include <opm/material/fluidstates/SimpleModularFluidState.hpp>
 

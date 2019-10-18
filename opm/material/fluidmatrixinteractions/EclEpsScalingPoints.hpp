@@ -29,7 +29,6 @@
 
 #include "EclEpsConfig.hpp"
 
-#if HAVE_ECL_INPUT
 #include <opm/parser/eclipse/Deck/Deck.hpp>
 #include <opm/parser/eclipse/Deck/DeckRecord.hpp>
 #include <opm/parser/eclipse/EclipseState/EclipseState.hpp>
@@ -42,7 +41,6 @@
 #include <opm/parser/eclipse/EclipseState/Tables/SwfnTable.hpp>
 #include <opm/parser/eclipse/EclipseState/Tables/SwofTable.hpp>
 #include <opm/parser/eclipse/EclipseState/Tables/TableManager.hpp>
-#endif
 
 #include <opm/material/common/Means.hpp>
 
@@ -66,7 +64,6 @@ class EclEpsGridProperties
     typedef std::vector<double> DoubleData;
 
 public:
-#if HAVE_ECL_INPUT
     void initFromDeck(const Opm::Deck& /* deck */,
                       const Opm::EclipseState& eclState,
                       bool useImbibition)
@@ -108,7 +105,6 @@ public:
         if (ecl3dProps.hasDeckDoubleGridProperty("PERMZ"))
             permz = &ecl3dProps.getDoubleGridProperty("PERMZ").getData();
     }
-#endif
 
     const IntData* satnum;
 
@@ -131,7 +127,6 @@ public:
     const DoubleData* permz;
 
 private:
-#if HAVE_ECL_INPUT
     // this method makes sure that a grid property is not created if it is not explicitly
     // mentioned in the deck. (saves memory.)
     void retrieveGridPropertyData_(const DoubleData **data,
@@ -142,7 +137,6 @@ private:
         if (eclState.get3DProperties().hasDeckDoubleGridProperty(properyName))
             (*data) = &eclState.get3DProperties().getDoubleGridProperty(properyName).getData();
     }
-#endif
 };
 
 /*!
@@ -214,7 +208,6 @@ struct EclEpsScalingPointsInfo
                   << "    maxKrog: " << maxKrog << "\n";
     }
 
-#if HAVE_ECL_INPUT
     /*!
      * \brief Extract the values of the unscaled scaling parameters.
      *
@@ -418,10 +411,8 @@ struct EclEpsScalingPointsInfo
             }
         }
     }
-#endif
 
 private:
-#if HAVE_ECL_INPUT
     void extractUnscaledSgof_(const Opm::SgofTable& sgofTable)
     {
         // minimum gas and oil-in-gas-oil saturation
@@ -646,7 +637,6 @@ private:
         maxKrow = sof2Table.getKroColumn().back();
         maxKrog = maxKrow;
     }
-#endif // HAVE_ECL_INPUT
 
     void extractGridPropertyValue_(Scalar& targetValue,
                                    const std::vector<double>* propData,

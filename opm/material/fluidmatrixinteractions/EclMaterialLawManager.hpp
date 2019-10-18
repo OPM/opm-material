@@ -24,10 +24,6 @@
  * \file
  * \copydoc Opm::EclMaterialLawManager
  */
-#if ! HAVE_ECL_INPUT
-#error "Eclipse input support in opm-common is required to use the ECL material manager!"
-#endif
-
 #ifndef OPM_ECL_MATERIAL_LAW_MANAGER_HPP
 #define OPM_ECL_MATERIAL_LAW_MANAGER_HPP
 
@@ -42,9 +38,7 @@
 #include <opm/material/fluidmatrixinteractions/MaterialTraits.hpp>
 #include <opm/material/fluidstates/SimpleModularFluidState.hpp>
 
-#if HAVE_OPM_COMMON
 #include <opm/common/OpmLog/OpmLog.hpp>
-#endif
 
 #include <opm/material/common/Exceptions.hpp>
 
