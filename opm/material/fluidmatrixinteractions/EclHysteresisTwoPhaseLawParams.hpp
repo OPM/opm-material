@@ -30,10 +30,8 @@
 #include "EclHysteresisConfig.hpp"
 #include "EclEpsScalingPoints.hpp"
 
-#if HAVE_ECL_INPUT
 #include <opm/parser/eclipse/Deck/Deck.hpp>
 #include <opm/parser/eclipse/EclipseState/EclipseState.hpp>
-#endif
 
 #include <string>
 #include <memory>

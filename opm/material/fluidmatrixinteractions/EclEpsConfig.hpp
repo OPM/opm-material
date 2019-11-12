@@ -27,13 +27,11 @@
 #ifndef OPM_ECL_EPS_CONFIG_HPP
 #define OPM_ECL_EPS_CONFIG_HPP
 
-#if HAVE_ECL_INPUT
 #include <opm/parser/eclipse/Deck/Deck.hpp>
 #include <opm/parser/eclipse/Deck/DeckItem.hpp>
 #include <opm/parser/eclipse/Deck/DeckKeyword.hpp>
 #include <opm/parser/eclipse/Deck/DeckRecord.hpp>
 #include <opm/parser/eclipse/EclipseState/EclipseState.hpp>
-#endif
 
 #include <opm/material/common/Exceptions.hpp>
 #include <opm/material/common/Unused.hpp>
@@ -155,7 +153,6 @@ public:
     bool enableLeverettScaling() const
     { return enableLeverettScaling_; }
 
-#if HAVE_ECL_INPUT
     /*!
      * \brief Reads all relevant material parameters form a cell of a parsed ECL deck.
      *
@@ -238,7 +235,6 @@ public:
             enableKrnScaling_ = props.hasDeckDoubleGridProperty("KRG");
         }
     }
-#endif
 
 private:
     // enable scaling of the input saturations (i.e., rescale the x-Axis)

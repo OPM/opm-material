@@ -24,9 +24,6 @@
  * \file
  * \copydoc Opm::EclThermalLawManager
  */
-#if ! HAVE_ECL_INPUT
-#error "Eclipse input support in opm-common is required to use the ECL thermal law manager!"
-#endif
 
 #ifndef OPM_ECL_THERMAL_LAW_MANAGER_HPP
 #define OPM_ECL_THERMAL_LAW_MANAGER_HPP

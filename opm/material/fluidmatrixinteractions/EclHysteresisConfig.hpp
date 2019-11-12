@@ -27,12 +27,10 @@
 #ifndef OPM_ECL_HYSTERESIS_CONFIG_HPP
 #define OPM_ECL_HYSTERESIS_CONFIG_HPP
 
-#if HAVE_ECL_INPUT
 #include <opm/parser/eclipse/Deck/Deck.hpp>
 #include <opm/parser/eclipse/Deck/DeckKeyword.hpp>
 #include <opm/parser/eclipse/Deck/DeckRecord.hpp>
 #include <opm/parser/eclipse/Deck/DeckItem.hpp>
-#endif
 
 #include <opm/material/common/Exceptions.hpp>
 
@@ -107,7 +105,6 @@ public:
     int krHysteresisModel() const
     { return krHysteresisModel_; }
 
-#if HAVE_ECL_INPUT
     /*!
      * \brief Reads all relevant material parameters form a cell of a parsed ECL deck.
      *
@@ -170,7 +167,6 @@ public:
             throw std::runtime_error("Capillary pressure hysteresis is not supported yet");
         }
     }
-#endif
 
 private:
     // enable hysteresis at all

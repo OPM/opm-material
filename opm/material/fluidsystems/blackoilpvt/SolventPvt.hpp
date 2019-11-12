@@ -31,14 +31,12 @@
 
 #include <opm/material/common/Tabulated1DFunction.hpp>
 
-#if HAVE_ECL_INPUT
 #include <opm/parser/eclipse/Deck/Deck.hpp>
 #include <opm/parser/eclipse/EclipseState/EclipseState.hpp>
 #include <opm/parser/eclipse/EclipseState/Tables/TableManager.hpp>
 #include <opm/parser/eclipse/EclipseState/Tables/PvdsTable.hpp>
 #include <opm/parser/eclipse/Deck/DeckKeyword.hpp>
 #include <opm/parser/eclipse/Deck/DeckRecord.hpp>
-#endif
 
 #include <vector>
 
@@ -54,7 +52,6 @@ class SolventPvt
     typedef std::vector<std::pair<Scalar, Scalar> > SamplingPoints;
 
 public:
-#if HAVE_ECL_INPUT
     /*!
      * \brief Initialize the parameters for "solvent gas" using an ECL deck.
      *
@@ -92,7 +89,6 @@ public:
 
         initEnd();
     }
-#endif
 
     void setNumRegions(size_t numRegions)
     {

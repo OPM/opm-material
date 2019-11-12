@@ -31,12 +31,10 @@
 #include "WetGasPvt.hpp"
 #include "GasPvtThermal.hpp"
 
-#if HAVE_ECL_INPUT
 #include <opm/parser/eclipse/Deck/Deck.hpp>
 #include <opm/parser/eclipse/EclipseState/EclipseState.hpp>
 #include <opm/parser/eclipse/Deck/DeckKeyword.hpp>
 #include <opm/parser/eclipse/Deck/DeckRecord.hpp>
-#endif
 
 namespace Opm {
 #define OPM_GAS_PVT_MULTIPLEXER_CALL(codeToCall)                        \
@@ -109,7 +107,6 @@ public:
         }
     }
 
-#if HAVE_ECL_INPUT
     /*!
      * \brief Initialize the parameters for gas using an ECL deck.
      *
@@ -130,7 +127,6 @@ public:
 
         OPM_GAS_PVT_MULTIPLEXER_CALL(pvtImpl.initFromDeck(deck, eclState));
     }
-#endif // HAVE_ECL_INPUT
 
     void setApproach(GasPvtApproach gasPvtAppr)
     {

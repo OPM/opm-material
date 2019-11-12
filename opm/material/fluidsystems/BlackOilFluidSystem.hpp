@@ -158,7 +158,6 @@ public:
     /****************************************
      * Initialization
      ****************************************/
-#if HAVE_ECL_INPUT
     /*!
      * \brief Initialize the fluid system using an ECL deck object
      */
@@ -230,7 +229,6 @@ public:
 
         initEnd();
     }
-#endif // HAVE_ECL_INPUT
 
     /*!
      * \brief Begin the initialization of the black oil fluid system.

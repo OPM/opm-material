@@ -29,13 +29,11 @@
 
 #include <opm/material/common/Tabulated1DFunction.hpp>
 
-#if HAVE_ECL_INPUT
 #include <opm/parser/eclipse/Deck/Deck.hpp>
 #include <opm/parser/eclipse/Deck/DeckKeyword.hpp>
 #include <opm/parser/eclipse/Deck/DeckRecord.hpp>
 #include <opm/parser/eclipse/Deck/DeckItem.hpp>
 #include <opm/parser/eclipse/EclipseState/EclipseState.hpp>
-#endif
 
 #include <vector>
 
@@ -51,7 +49,6 @@ class ConstantCompressibilityWaterPvt
     typedef std::vector<std::pair<Scalar, Scalar> > SamplingPoints;
 
 public:
-#if HAVE_ECL_INPUT
     /*!
      * \brief Sets the pressure-dependent water viscosity and density
      *        using a table stemming from the Eclipse PVTW keyword.
@@ -87,7 +84,6 @@ public:
 
         initEnd();
     }
-#endif
 
     void setNumRegions(size_t numRegions)
     {
