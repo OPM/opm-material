@@ -127,6 +127,12 @@ public:
         // copy the SATNUM grid property. in some cases this is not necessary, but it
         // should not require much memory anyway...
         satnumRegionArray_.resize(numCompressedElems);
+#ifdef ENABLE_3DPROPS_TESTING
+        const auto& fp = eclState.fieldProps();
+        const auto& satnum_data = fp.get<int>("SATNUM");
+        for (unsigned elemIdx = 0; elemIdx < numCompressedElems; ++elemIdx)
+            satnumRegionArray_[elemIdx] = satnum_data[elemIdx] - 1;
+#else
         if (eclState.get3DProperties().hasDeckIntGridProperty("SATNUM")) {
             const auto& satnumRawData = eclState.get3DProperties().getIntGridProperty("SATNUM").getData();
             for (unsigned elemIdx = 0; elemIdx < numCompressedElems; ++elemIdx) {
@@ -136,10 +142,19 @@ public:
         }
         else
             std::fill(satnumRegionArray_.begin(), satnumRegionArray_.end(), 0);
+#endif
 
         // create the information for the imbibition region (IMBNUM). By default this is
         // the same as the saturation region (SATNUM)
         imbnumRegionArray_ = satnumRegionArray_;
+
+#ifdef ENABLE_3DPROPS_TESTING
+        if (fp.has<double>("IMBNUM")) {
+            const auto& imbnum_data = fp.get<int>("IMBNUM");
+            for (unsigned elemIdx = 0; elemIdx < numCompressedElems; ++elemIdx)
+                imbnumRegionArray_[elemIdx] = imbnum_data[elemIdx] - 1;
+        }
+#else
         if (eclState.get3DProperties().hasDeckIntGridProperty("IMBNUM")) {
             const auto& imbnumRawData = eclState.get3DProperties().getIntGridProperty("IMBNUM").getData();
             for (unsigned elemIdx = 0; elemIdx < numCompressedElems; ++elemIdx) {
@@ -147,7 +162,7 @@ public:
                 imbnumRegionArray_[elemIdx] = imbnumRawData[cartesianElemIdx] - 1;
             }
         }
-
+#endif
         readGlobalEpsOptions_(deck, eclState);
         readGlobalHysteresisOptions_(deck);
         readGlobalThreePhaseOptions_(deck);

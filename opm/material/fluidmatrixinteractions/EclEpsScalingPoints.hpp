@@ -55,7 +55,6 @@
 #include <algorithm>
 
 namespace Opm {
-
 /*!
  * \brief This structure represents all values which can be possibly used as scaling
  *        points in the endpoint scaling code.

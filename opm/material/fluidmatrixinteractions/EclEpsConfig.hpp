@@ -184,6 +184,60 @@ public:
 
         enableThreePointKrSatScaling_ = endscale.threepoint();
 
+#ifdef ENABLE_3DPROPS_TESTING
+        const auto& props = eclState.fieldProps();
+        if (twoPhaseSystemType == EclOilWaterSystem) {
+            enablePcScaling_ = props.has<double>("PCW") || props.has<double>("SWATINIT");
+
+            // check if Leverett capillary pressure scaling is requested
+            if (eclState.getTableManager().useJFunc()) {
+                const auto& jfunc = eclState.getTableManager().getJFunc();
+                auto flag = jfunc.flag();
+                if (flag == Opm::JFunc::Flag::BOTH || flag == Opm::JFunc::Flag::WATER)
+                    enableLeverettScaling_ = true;
+            }
+
+            if (enablePcScaling_ && enableLeverettScaling_)
+                throw std::runtime_error("Capillary pressure scaling and the Leverett scaling function are "
+                                         "mutually exclusive: The deck contains the PCW property and the "
+                                         "JFUNC keyword applies to the water phase.");
+        }
+        else {
+            assert(twoPhaseSystemType == EclGasOilSystem);
+            enablePcScaling_ = props.has<double>("PCG");
+
+            // check if Leverett capillary pressure scaling is requested
+            if (eclState.getTableManager().useJFunc()) {
+                const auto& jfunc = eclState.getTableManager().getJFunc();
+                auto flag = jfunc.flag();
+                if (flag == Opm::JFunc::Flag::BOTH || flag == Opm::JFunc::Flag::GAS)
+                    enableLeverettScaling_ = true;
+            }
+
+            if (enablePcScaling_ && enableLeverettScaling_)
+                throw std::runtime_error("Capillary pressure scaling and the Leverett scaling function are "
+                                         "mutually exclusive: The deck contains the PCG property and the "
+                                         "JFUNC keyword applies to the gas phase.");
+        }
+
+        // check if we are supposed to scale the Y axis of the wetting phase relperm
+        if (twoPhaseSystemType == EclOilWaterSystem)
+            enableKrwScaling_ = props.has<double>("KRW");
+        else {
+            assert(twoPhaseSystemType == EclGasOilSystem);
+            enableKrwScaling_ = props.has<double>("KRO");
+        }
+
+        // check if we are supposed to scale the Y axis of the non-wetting phase relperm
+        if (twoPhaseSystemType == EclOilWaterSystem)
+            enableKrnScaling_ = props.has<double>("KRO");
+        else {
+            assert(twoPhaseSystemType == EclGasOilSystem);
+            enableKrnScaling_ = props.has<double>("KRG");
+        }
+
+#else
+
         auto& props = eclState.get3DProperties();
         // check if we are supposed to scale the Y axis of the capillary pressure
         if (twoPhaseSystemType == EclOilWaterSystem) {
@@ -237,6 +291,7 @@ public:
             assert(twoPhaseSystemType == EclGasOilSystem);
             enableKrnScaling_ = props.hasDeckDoubleGridProperty("KRG");
         }
+#endif
     }
 #endif
 
