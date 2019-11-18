@@ -72,9 +72,9 @@ public:
         std::string kwPrefix = useImbibition?"I":"";
 
         if (useImbibition)
-            satnum = &eclState.get3DProperties().getIntGridProperty("IMBNUM").getData();
+            global_satnum = eclState.get3DProperties().getIntGridProperty("IMBNUM").getData();
         else
-            satnum = &eclState.get3DProperties().getIntGridProperty("SATNUM").getData();
+            global_satnum = eclState.get3DProperties().getIntGridProperty("SATNUM").getData();
 
         retrieveGridPropertyData_(&swl, eclState, kwPrefix+"SWL");
         retrieveGridPropertyData_(&sgl, eclState, kwPrefix+"SGL");
@@ -108,7 +108,7 @@ public:
     }
 #endif
 
-    const std::vector<int> * satnum;
+    std::vector<int> global_satnum;
 
     const std::vector<double>* swl;
     const std::vector<double>* sgl;
