@@ -62,8 +62,6 @@ namespace Opm {
  */
 class EclEpsGridProperties
 {
-    typedef std::vector<int> IntData;
-    typedef std::vector<double> DoubleData;
 
 public:
 #if HAVE_ECL_INPUT
@@ -110,31 +108,31 @@ public:
     }
 #endif
 
-    const IntData* satnum;
+    const std::vector<int> * satnum;
 
-    const DoubleData* swl;
-    const DoubleData* sgl;
-    const DoubleData* swcr;
-    const DoubleData* sgcr;
-    const DoubleData* sowcr;
-    const DoubleData* sogcr;
-    const DoubleData* swu;
-    const DoubleData* sgu;
-    const DoubleData* pcw;
-    const DoubleData* pcg;
-    const DoubleData* krw;
-    const DoubleData* kro;
-    const DoubleData* krg;
-    const DoubleData* poro;
-    const DoubleData* permx;
-    const DoubleData* permy;
-    const DoubleData* permz;
+    const std::vector<double>* swl;
+    const std::vector<double>* sgl;
+    const std::vector<double>* swcr;
+    const std::vector<double>* sgcr;
+    const std::vector<double>* sowcr;
+    const std::vector<double>* sogcr;
+    const std::vector<double>* swu;
+    const std::vector<double>* sgu;
+    const std::vector<double>* pcw;
+    const std::vector<double>* pcg;
+    const std::vector<double>* krw;
+    const std::vector<double>* kro;
+    const std::vector<double>* krg;
+    const std::vector<double>* poro;
+    const std::vector<double>* permx;
+    const std::vector<double>* permy;
+    const std::vector<double>* permz;
 
 private:
 #if HAVE_ECL_INPUT
     // this method makes sure that a grid property is not created if it is not explicitly
     // mentioned in the deck. (saves memory.)
-    void retrieveGridPropertyData_(const DoubleData **data,
+    void retrieveGridPropertyData_(const std::vector<double> **data,
                                    const Opm::EclipseState& eclState,
                                    const std::string& properyName)
     {
