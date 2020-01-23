@@ -117,7 +117,8 @@ public:
     {}
 
     void initFromDeck(const Opm::Deck& deck,
-                      const Opm::EclipseState& eclState)
+                      const Opm::EclipseState& eclState,
+                      const std::vector<int>& compressedToCartesianElemIdx)
     {
         // get the number of saturation regions and the number of cells in the deck
         const size_t numSatRegions = eclState.runspec().tabdims().getNumSatTables();
@@ -153,6 +154,8 @@ public:
     {
         // get the number of saturation regions
         const size_t numSatRegions = eclState.runspec().tabdims().getNumSatTables();
+        const auto& fp = eclState.fieldProps();
+        const auto& indexmap = fp.indexmap();
 
         // setup the saturation region specific parameters
         gasOilUnscaledPointsVector_.resize(numSatRegions);
@@ -173,11 +176,11 @@ public:
         // copy the SATNUM grid property. in some cases this is not necessary, but it
         // should not require much memory anyway...
         satnumRegionArray_.resize(numCompressedElems);
-        if (eclState.fieldProps().has<int>("SATNUM")) {
-            const auto& satnumRawData = eclState.fieldProps().get_global<int>("SATNUM");
+        if (fp.has<int>("SATNUM")) {
+            const auto& satnumRawData = fp.get<int>("SATNUM");
             for (unsigned elemIdx = 0; elemIdx < numCompressedElems; ++elemIdx) {
                 unsigned cartesianElemIdx = static_cast<unsigned>(compressedToCartesianElemIdx[elemIdx]);
-                satnumRegionArray_[elemIdx] = satnumRawData[cartesianElemIdx] - 1;
+                satnumRegionArray_[elemIdx] = satnumRawData[indexmap[cartesianElemIdx]] - 1;
             }
         }
         else
@@ -186,11 +189,11 @@ public:
         // create the information for the imbibition region (IMBNUM). By default this is
         // the same as the saturation region (SATNUM)
         imbnumRegionArray_ = satnumRegionArray_;
-        if (eclState.fieldProps().has<int>("IMBNUM")) {
-            const auto& imbnumRawData = eclState.fieldProps().get_global<int>("IMBNUM");
+        if (fp.has<int>("IMBNUM")) {
+            const auto& imbnumRawData = fp.get<int>("IMBNUM");
             for (unsigned elemIdx = 0; elemIdx < numCompressedElems; ++elemIdx) {
                 int cartesianElemIdx = compressedToCartesianElemIdx[elemIdx];
-                imbnumRegionArray_[elemIdx] = imbnumRawData[cartesianElemIdx] - 1;
+                imbnumRegionArray_[elemIdx] = imbnumRawData[indexmap[cartesianElemIdx]] - 1;
             }
         }
 

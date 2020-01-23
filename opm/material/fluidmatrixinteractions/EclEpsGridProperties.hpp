@@ -60,12 +60,12 @@ namespace Opm {
 
 namespace {
 template <typename T>
-std::vector<T> compressed_copy(const std::vector<T>& global_vector, const std::vector<int>& compressedToCartesianElemIdx) {
+std::vector<T> compressed_copy(const std::vector<T>& input_vector, const std::vector<int>& indexmap, const std::vector<int>& compressedToCartesianElemIdx) {
     std::vector<T> compressed = std::vector<T>(compressedToCartesianElemIdx.size());
 
-    for (std::size_t active_index = 0; active_index < compressedToCartesianElemIdx.size(); active_index++) {
-        auto global_index = compressedToCartesianElemIdx[active_index];
-        compressed[active_index] = global_vector[global_index];
+    for (std::size_t elem_index = 0; elem_index < compressedToCartesianElemIdx.size(); elem_index++) {
+        auto global_index = compressedToCartesianElemIdx[elem_index];
+        compressed[elem_index] = input_vector[indexmap[global_index]];
     }
 
     return compressed;
@@ -75,7 +75,7 @@ std::vector<T> compressed_copy(const std::vector<T>& global_vector, const std::v
 
 std::vector<double> try_get(const FieldPropsManager& fp, const std::string& keyword, const std::vector<int>& compressedToCartesianElemIdx) {
     if (fp.has<double>(keyword))
-        return compressed_copy(fp.get_global<double>(keyword), compressedToCartesianElemIdx);
+        return compressed_copy(fp.get<double>(keyword), fp.indexmap(), compressedToCartesianElemIdx);
 
     return {};
 }
@@ -97,11 +97,12 @@ public:
         std::string kwPrefix = useImbibition?"I":"";
 
         const auto& fp = eclState.fieldProps();
+        const auto& indexmap = fp.indexmap();
 
         if (useImbibition)
-            compressed_satnum = compressed_copy(fp.get_global<int>("IMBNUM"), compressedToCartesianElemIdx);
+            compressed_satnum = compressed_copy(fp.get<int>("IMBNUM"), indexmap, compressedToCartesianElemIdx);
         else
-            compressed_satnum = compressed_copy(fp.get_global<int>("SATNUM"), compressedToCartesianElemIdx);
+            compressed_satnum = compressed_copy(fp.get<int>("SATNUM"), indexmap, compressedToCartesianElemIdx);
 
         this->compressed_swl = try_get( fp, kwPrefix+"SWL", compressedToCartesianElemIdx);
         this->compressed_sgl = try_get( fp, kwPrefix+"SGL", compressedToCartesianElemIdx);
@@ -119,20 +120,20 @@ public:
 
         // _may_ be needed to calculate the Leverett capillary pressure scaling factor
         if (fp.has<double>("PORO"))
-            this->compressed_poro = compressed_copy(fp.get_global<double>("PORO"), compressedToCartesianElemIdx);
+            this->compressed_poro = compressed_copy(fp.get<double>("PORO"), indexmap, compressedToCartesianElemIdx);
 
         if (fp.has<double>("PERMX"))
-            this->compressed_permx = compressed_copy(fp.get_global<double>("PERMX"), compressedToCartesianElemIdx);
+            this->compressed_permx = compressed_copy(fp.get<double>("PERMX"), indexmap, compressedToCartesianElemIdx);
         else
             this->compressed_permx = std::vector<double>(this->compressed_satnum.size());
 
         if (fp.has<double>("PERMY"))
-            this->compressed_permy= compressed_copy(fp.get_global<double>("PERMY"), compressedToCartesianElemIdx);
+            this->compressed_permy= compressed_copy(fp.get<double>("PERMY"), indexmap, compressedToCartesianElemIdx);
         else
             this->compressed_permy= this->compressed_permx;
 
         if (fp.has<double>("PERMZ"))
-            this->compressed_permz= compressed_copy(fp.get_global<double>("PERMZ"), compressedToCartesianElemIdx);
+            this->compressed_permz= compressed_copy(fp.get<double>("PERMZ"), indexmap, compressedToCartesianElemIdx);
         else
             this->compressed_permz= this->compressed_permx;
     }

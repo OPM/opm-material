@@ -149,17 +149,20 @@ private:
         HeatcrLawParams::setReferenceTemperature(FluidSystem::surfaceTemperature);
 
         const auto& fp = eclState.fieldProps();
-        const std::vector<double>& heatcrData  = fp.get_global<double>("HEATCR");
-        const std::vector<double>& heatcrtData = fp.get_global<double>("HEATCRT");
+        const auto& indexmap = fp.indexmap();
+        const std::vector<double>& heatcrData  = fp.get<double>("HEATCR");
+        const std::vector<double>& heatcrtData = fp.get<double>("HEATCRT");
         unsigned numElems = compressedToCartesianElemIdx.size();
         solidEnergyLawParams_.resize(numElems);
         for (unsigned elemIdx = 0; elemIdx < numElems; ++elemIdx) {
             auto& elemParam = solidEnergyLawParams_[elemIdx];
             elemParam.setSolidEnergyApproach(SolidEnergyLawParams::heatcrApproach);
             auto& heatcrElemParams = elemParam.template getRealParams<SolidEnergyLawParams::heatcrApproach>();
+            const auto& global_index = compressedToCartesianElemIdx[elemIdx];
+            const auto& input_index = indexmap[global_index];
 
-            heatcrElemParams.setReferenceRockHeatCapacity(heatcrData[elemIdx]);
-            heatcrElemParams.setDRockHeatCapacity_dT(heatcrtData[elemIdx]);
+            heatcrElemParams.setReferenceRockHeatCapacity(heatcrData[input_index]);
+            heatcrElemParams.setDRockHeatCapacity_dT(heatcrtData[input_index]);
             heatcrElemParams.finalize();
             elemParam.finalize();
         }
@@ -176,14 +179,15 @@ private:
 
         // initialize the element index -> SATNUM index mapping
         const auto& fp = eclState.fieldProps();
-        const std::vector<int>& satnumData = fp.get_global<int>("SATNUM");
+        const auto& indexmap = fp.indexmap();
+        const std::vector<int>& satnumData = fp.get<int>("SATNUM");
         elemToSatnumIdx_.resize(compressedToCartesianElemIdx.size());
         for (unsigned elemIdx = 0; elemIdx < compressedToCartesianElemIdx.size(); ++ elemIdx) {
             unsigned cartesianElemIdx = compressedToCartesianElemIdx[elemIdx];
 
             // satnumData contains Fortran-style indices, i.e., they start with 1 instead
             // of 0!
-            elemToSatnumIdx_[elemIdx] = satnumData[cartesianElemIdx] - 1;
+            elemToSatnumIdx_[elemIdx] = satnumData[indexmap[cartesianElemIdx]] - 1;
         }
         // internalize the SPECROCK table
         unsigned numSatRegions = eclState.runspec().tabdims().getNumSatTables();
@@ -229,14 +233,14 @@ private:
         thermalConductivityApproach_ = ThermalConductionLawParams::thconrApproach;
 
         const auto& fp = eclState.fieldProps();
-        auto global_size = eclState.getInputGrid().getCartesianSize();
-        std::vector<double> thconrData(global_size, 0);
-        std::vector<double> thconsfData(global_size, 0);
+        const auto& indexmap = fp.indexmap();
+        std::vector<double> thconrData(fp.active_size(), 0);
+        std::vector<double> thconsfData(fp.active_size(), 0);
         if (fp.has<double>("THCONR"))
-            thconrData  = fp.get_global<double>("THCONR");
+            thconrData  = fp.get<double>("THCONR");
 
         if (fp.has<double>("THCONSF"))
-            thconsfData = fp.get_global<double>("THCONSF");
+            thconsfData = fp.get<double>("THCONSF");
 
         unsigned numElems = compressedToCartesianElemIdx.size();
         thermalConductionLawParams_.resize(numElems);
@@ -246,8 +250,9 @@ private:
             auto& thconrElemParams = elemParams.template getRealParams<ThermalConductionLawParams::thconrApproach>();
 
             int cartElemIdx = compressedToCartesianElemIdx[elemIdx];
-            thconrElemParams.setReferenceTotalThermalConductivity(thconrData[cartElemIdx]);
-            thconrElemParams.setDTotalThermalConductivity_dSg(thconsfData[cartElemIdx]);
+            const auto& input_index = indexmap[cartElemIdx];
+            thconrElemParams.setReferenceTotalThermalConductivity(thconrData[input_index]);
+            thconrElemParams.setDTotalThermalConductivity_dSg(thconsfData[input_index]);
 
             thconrElemParams.finalize();
             elemParams.finalize();
@@ -264,25 +269,25 @@ private:
         thermalConductivityApproach_ = ThermalConductionLawParams::thcApproach;
 
         const auto& fp = eclState.fieldProps();
-        auto global_size = eclState.getInputGrid().getCartesianSize();
-        std::vector<double> thcrockData(global_size,0);
-        std::vector<double> thcoilData(global_size,0);
-        std::vector<double> thcgasData(global_size,0);
-        std::vector<double> thcwaterData = fp.get_global<double>("THCWATER");
+        const auto& indexmap = fp.indexmap();
+        std::vector<double> thcrockData(fp.active_size(),0);
+        std::vector<double> thcoilData(fp.active_size(),0);
+        std::vector<double> thcgasData(fp.active_size(),0);
+        std::vector<double> thcwaterData = fp.get<double>("THCWATER");
 
         if (fp.has<double>("THCROCK"))
-            thcrockData = fp.get_global<double>("THCROCK");
+            thcrockData = fp.get<double>("THCROCK");
 
         if (fp.has<double>("THCOIL"))
-            thcoilData = fp.get_global<double>("THCOIL");
+            thcoilData = fp.get<double>("THCOIL");
 
         if (fp.has<double>("THCGAS"))
-            thcgasData = fp.get_global<double>("THCGAS");
+            thcgasData = fp.get<double>("THCGAS");
 
         if (fp.has<double>("THCWATER"))
-            thcwaterData = fp.get_global<double>("THCWATER");
+            thcwaterData = fp.get<double>("THCWATER");
 
-        const std::vector<double>& poroData = fp.get_global<double>("PORO");
+        const std::vector<double>& poroData = fp.get<double>("PORO");
 
         unsigned numElems = compressedToCartesianElemIdx.size();
         thermalConductionLawParams_.resize(numElems);
@@ -292,11 +297,12 @@ private:
             auto& thcElemParams = elemParams.template getRealParams<ThermalConductionLawParams::thcApproach>();
 
             int cartElemIdx = compressedToCartesianElemIdx[elemIdx];
-            thcElemParams.setPorosity(poroData[cartElemIdx]);
-            thcElemParams.setThcrock(thcrockData[cartElemIdx]);
-            thcElemParams.setThcoil(thcoilData[cartElemIdx]);
-            thcElemParams.setThcgas(thcgasData[cartElemIdx]);
-            thcElemParams.setThcwater(thcwaterData[cartElemIdx]);
+            const auto& input_index = indexmap[cartElemIdx];
+            thcElemParams.setPorosity(poroData[input_index]);
+            thcElemParams.setThcrock(thcrockData[input_index]);
+            thcElemParams.setThcoil(thcoilData[input_index]);
+            thcElemParams.setThcgas(thcgasData[input_index]);
+            thcElemParams.setThcwater(thcwaterData[input_index]);
 
             thcElemParams.finalize();
             elemParams.finalize();
