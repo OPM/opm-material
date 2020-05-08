@@ -2,7 +2,7 @@
 # spec file for package opm-material
 #
 
-%define tag rc3
+%define tag rc4
 
 Name:           opm-material
 Version:        2020.04
