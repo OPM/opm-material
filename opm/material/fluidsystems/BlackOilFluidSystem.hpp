@@ -219,6 +219,7 @@ public:
 
         setEnableDissolvedGas(eclState.getSimulationConfig().hasDISGAS());
         setEnableVaporizedOil(eclState.getSimulationConfig().hasVAPOIL());
+        //setEnableVaporizedWat(eclState.getSimulationConfig().hasVAPWAT());
 
         // set the reference densities of all PVT regions
         for (unsigned regionIdx = 0; regionIdx < numRegions; ++regionIdx) {

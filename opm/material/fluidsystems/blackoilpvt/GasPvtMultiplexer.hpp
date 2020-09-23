@@ -29,6 +29,7 @@
 
 #include "DryGasPvt.hpp"
 #include "WetGasPvt.hpp"
+#include "WatWetGasPvt.hpp"
 #include "GasPvtThermal.hpp"
 
 #if HAVE_ECL_INPUT
@@ -45,6 +46,11 @@ namespace Opm {
     }                                                                   \
     case WetGasPvt: {                                                   \
         auto& pvtImpl = getRealPvt<WetGasPvt>();                        \
+        codeToCall;                                                     \
+        break;                                                          \
+    }       
+    case WatWetGasPvt: {                                                \
+        auto& pvtImpl = getRealPvt<WatWetGasPvt>();                     \
         codeToCall;                                                     \
         break;                                                          \
     }                                                                   \
@@ -78,6 +84,7 @@ public:
         NoGasPvt,
         DryGasPvt,
         WetGasPvt,
+        WatWetGasPvt,
         ThermalGasPvt
     };
 
@@ -108,6 +115,10 @@ public:
             delete &getRealPvt<WetGasPvt>();
             break;
         }
+        case WatWetGasPvt: {
+            delete &getRealPvt<WatWetGasPvt>();
+            break;
+        }
         case ThermalGasPvt: {
             delete &getRealPvt<ThermalGasPvt>();
             break;
@@ -130,6 +141,8 @@ public:
 
         if (enableThermal && eclState.getSimulationConfig().isThermal())
             setApproach(ThermalGasPvt);
+        else if (eclState.getTableManager().hasTables("PVTGW")) 
+            setApproach(WatWetGasPvt);
         else if (!eclState.getTableManager().getPvtgTables().empty())
             setApproach(WetGasPvt);
         else if (eclState.getTableManager().hasTables("PVDG"))
@@ -148,6 +161,10 @@ public:
 
         case WetGasPvt:
             realGasPvt_ = new Opm::WetGasPvt<Scalar>;
+            break;
+
+        case WatWetGasPvt:
+            realGasPvt_ = new Opm::WatWetGasPvt<Scalar>;
             break;
 
         case ThermalGasPvt:
@@ -288,6 +305,21 @@ public:
         return *static_cast<const Opm::WetGasPvt<Scalar>* >(realGasPvt_);
     }
 
+    // get the parameter object for the wat wet gas case
+    template <GasPvtApproach approachV>
+    typename std::enable_if<approachV == WatWetGasPvt, Opm::WatWetGasPvt<Scalar> >::type& getRealPvt()
+    {
+        assert(gasPvtApproach() == approachV);
+        return *static_cast<Opm::WatWetGasPvt<Scalar>* >(realGasPvt_);
+    }
+
+    template <GasPvtApproach approachV>
+    typename std::enable_if<approachV == WatWetGasPvt, const Opm::WatWetGasPvt<Scalar> >::type& getRealPvt() const
+    {
+        assert(gasPvtApproach() == approachV);
+        return *static_cast<const Opm::WatWetGasPvt<Scalar>* >(realGasPvt_);
+    }
+
     // get the parameter object for the thermal gas case
     template <GasPvtApproach approachV>
     typename std::enable_if<approachV == ThermalGasPvt, Opm::GasPvtThermal<Scalar> >::type& getRealPvt()
@@ -317,6 +349,9 @@ public:
         case WetGasPvt:
             return *static_cast<const Opm::WetGasPvt<Scalar>*>(realGasPvt_) ==
                    *static_cast<const Opm::WetGasPvt<Scalar>*>(data.realGasPvt_);
+        case WatWetGasPvt:
+            return *static_cast<const Opm::WatWetGasPvt<Scalar>*>(realGasPvt_) ==
+                   *static_cast<const Opm::WatWetGasPvt<Scalar>*>(data.realGasPvt_);
         case ThermalGasPvt:
             return *static_cast<const Opm::GasPvtThermal<Scalar>*>(realGasPvt_) ==
                    *static_cast<const Opm::GasPvtThermal<Scalar>*>(data.realGasPvt_);
@@ -334,6 +369,9 @@ public:
             break;
         case WetGasPvt:
             realGasPvt_ = new Opm::WetGasPvt<Scalar>(*static_cast<const Opm::WetGasPvt<Scalar>*>(data.realGasPvt_));
+            break;
+        case WatWetGasPvt:
+            realGasPvt_ = new Opm::WatWetGasPvt<Scalar>(*static_cast<const Opm::WatWetGasPvt<Scalar>*>(data.realGasPvt_));
             break;
         case ThermalGasPvt:
             realGasPvt_ = new Opm::GasPvtThermal<Scalar>(*static_cast<const Opm::GasPvtThermal<Scalar>*>(data.realGasPvt_));
