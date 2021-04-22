@@ -21,13 +21,34 @@ Multi-Arch: foreign
 Depends: libdune-istl-dev, libdune-common-dev
 Provides: libopm-material-dev
 Suggests: libopm-material1-doc
-Description: OPM thermodynamic framework library -- development files
- This library contains the thermodynamic framework used in OPM.
+Description: Material properties framework for porous media -- development files
+ The Open Porous Media (OPM) software suite provides libraries and
+ tools for modeling and simulation of porous media processes, especially
+ for simulating CO2 sequestration and improved and enhanced oil recovery
+ .
+ This header-only library contains the generic code for calculating material
+ properties used when simulating porous media flow. It includes utilities
+ for calculating relative-permeability/capillary pressure
+ laws, thermodynamic relations, flash solvers, empirical heat
+ conduction laws, et cetera.
+ .
+ This package contains the development files (headers) needed.
+
 
 Package: libopm-material1-doc
 Section: doc
 Architecture: all
 Multi-Arch: foreign
 Provides: libopm-material-doc
-Description: OPM thermodynamic framework library -- documentation
- This library contains the thermodynamic framework used in OPM.
+Description: Material properties framework for porous media -- development files
+ The Open Porous Media (OPM) software suite provides libraries and
+ tools for modeling and simulation of porous media processes, especially
+ for simulating CO2 sequestration and improved and enhanced oil recovery
+ .
+ This header-only library contains the generic code for calculating material
+ properties used when simulating porous media flow. It includes utilities
+ for calculating relative-permeability/capillary pressure
+ laws, thermodynamic relations, flash solvers, empirical heat
+ conduction laws, et cetera.
+ .
+ This package contains the documentation of the source code.
