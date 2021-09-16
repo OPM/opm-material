@@ -297,7 +297,7 @@ private:
 };
 
 template<class Scalar>
-bool UniformTabulated2DFunction<Scalar>::throwUntabulated = false;
+bool UniformTabulated2DFunction<Scalar>::throwUntabulated = true;
 } // namespace Opm
 
 #endif
