@@ -31,6 +31,7 @@
 #include <opm/material/common/Exceptions.hpp>
 #include <opm/material/common/MathToolbox.hpp>
 
+#include <opm/common/OpmLog/OpmLog.hpp>
 
 #include <vector>
 
@@ -49,6 +50,11 @@ template <class Scalar>
 class UniformTabulated2DFunction
 {
 public:
+    /*!
+     * \brief Whether to throw for values outside of tabulated range.
+     */
+    static bool throwUntabulated;
+
     UniformTabulated2DFunction()
     { }
 
@@ -186,7 +192,8 @@ public:
      * \brief Evaluate the function at a given (x,y) position.
      *
      * If this method is called for a value outside of the tabulated
-     * range, a \c Opm::NumericalIssue exception is thrown.
+     * range, a \c Opm::NumericalIssue exception is thrown if
+     * throwUntabulated is true.
      */
     template <class Evaluation>
     Evaluation eval(const Evaluation& x, const Evaluation& y) const
@@ -194,11 +201,20 @@ public:
 #ifndef NDEBUG
         if (!applies(x,y))
         {
-            throw NumericalIssue("Attempt to get tabulated value for ("
-                                   +std::to_string(double(scalarValue(x)))+", "+std::to_string(double(scalarValue(y)))
-                                   +") on a table of extend "
-                                   +std::to_string(xMin())+" to "+std::to_string(xMax())+" times "
-                                   +std::to_string(yMin())+" to "+std::to_string(yMax()));
+            std::string msg = "Attempt to get tabulated value for ("
+                +std::to_string(double(scalarValue(x)))+", "+std::to_string(double(scalarValue(y)))
+                +") on a table of extend "
+                +std::to_string(xMin())+" to "+std::to_string(xMax())+" times "
+                +std::to_string(yMin())+" to "+std::to_string(yMax());
+
+            if (throwUntabulated)
+            {
+                throw NumericalIssue(msg);
+            }
+            else
+            {
+                OpmLog::warning("PVT Table evaluation:" + msg + ". Will use extrapolation");
+            }
         };
 #endif
 
@@ -281,6 +297,9 @@ private:
     Scalar yMin_;
     Scalar yMax_;
 };
+
+template<class Scalar>
+bool UniformTabulated2DFunction<Scalar>::throwUntabulated = false;
 } // namespace Opm
 
 #endif

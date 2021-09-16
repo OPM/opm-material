@@ -52,7 +52,6 @@ template <class Scalar, class CO2Tables>
 class CO2 : public Component<Scalar, CO2<Scalar, CO2Tables> >
 {
     static const Scalar R;
-    static bool warningPrinted;
 
 public:
     /*!
@@ -261,8 +260,6 @@ public:
     }
 };
 
-template <class Scalar, class CO2Tables>
-bool CO2<Scalar, CO2Tables>::warningPrinted = false;
 
 template <class Scalar, class CO2Tables>
 const Scalar CO2<Scalar, CO2Tables>::R = Constants<Scalar>::R;
