@@ -198,7 +198,6 @@ public:
     template <class Evaluation>
     Evaluation eval(const Evaluation& x, const Evaluation& y) const
     {
-#ifndef NDEBUG
         if (!applies(x,y))
         {
             std::string msg = "Attempt to get tabulated value for ("
@@ -216,7 +215,6 @@ public:
                 OpmLog::warning("PVT Table evaluation:" + msg + ". Will use extrapolation");
             }
         };
-#endif
 
         Evaluation alpha = xToI(x);
         Evaluation beta = yToJ(y);
