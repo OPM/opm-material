@@ -39,6 +39,9 @@
 #include <opm/material/binarycoefficients/Brine_CO2.hpp>
 #include <opm/material/components/co2tables.inc>
 
+#if HAVE_OPM_COMMON
+#include <opm/common/OpmLog/OpmLog.hpp>
+#endif
 
 #if HAVE_ECL_INPUT
 #include <opm/parser/eclipse/EclipseState/EclipseState.hpp>
@@ -327,13 +330,21 @@ private:
             std::ostringstream oss;
             oss << "Liquid density for Brine and CO2 is only "
                    "defined above 273.15K (is "<<T<<"K)";
+#if HAVE_OPM_COMMON
+            OpmLog::warning(oss.str());
+#else
             throw NumericalIssue(oss.str());
+#endif
         }
         if(pl >= 2.5e8) {
             std::ostringstream oss;
             oss << "Liquid density for Brine and CO2 is only "
                    "defined below 250MPa (is "<<pl<<"Pa)";
+#if HAVE_OPM_COMMON
+            OpmLog::warning(oss.str());
+#else
             throw NumericalIssue(oss.str());
+#endif
         }
 
         const LhsEval& rho_brine = Brine::liquidDensity(T, pl);

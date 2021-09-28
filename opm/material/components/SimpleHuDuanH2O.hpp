@@ -39,6 +39,10 @@
 
 #include <cmath>
 
+#if HAVE_OPM_COMMON
+#include <opm/common/OpmLog/OpmLog.hpp>
+#endif
+
 namespace Opm {
 
  /*!
@@ -342,7 +346,11 @@ public:
             std::ostringstream oss;
             oss << "Viscosity of water based on Hu et al is too different from IAPWS for T above 570K and "
                 << "(T = " << temperature << ")";
+#if HAVE_OPM_COMMON
+            OpmLog::warning(oss.str());
+#else
             throw NumericalIssue(oss.str());
+#endif
         }
 
         const Evaluation& rho = liquidDensity(temperature, pressure);
@@ -366,7 +374,11 @@ private:
             std::ostringstream oss;
             oss << "Density of water is only implemented for temperatures below 647K and "
                 << "pressures below 100MPa. (T = " << T << ", p=" << pressure;
+#if HAVE_OPM_COMMON
+            OpmLog::warning(oss.str());
+#else
             throw NumericalIssue(oss.str());
+#endif
         }
 
         Evaluation p = pressure / 1e6; // to MPa
