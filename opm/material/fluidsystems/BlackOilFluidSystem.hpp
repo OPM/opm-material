@@ -1325,7 +1325,7 @@ public:
 
     static short canonicalToActivePhaseIdx(unsigned phaseIdx) {
         assert(phaseIdx<numPhases);
-        assert(phaseIsActive(phaseIdx));
+        assert(phaseIsActive(phaseIdx) || numActivePhases()==1);
         return canonicalToActivePhaseIdx_[phaseIdx];
     }
 
