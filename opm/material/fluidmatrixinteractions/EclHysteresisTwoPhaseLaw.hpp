@@ -228,7 +228,7 @@ public:
     static Evaluation twoPhaseSatKrw(const Params& params, const Evaluation& Sw)
     {
         // if no relperm hysteresis is enabled, use the drainage curve
-        if (!params.config().enableHysteresis() || params.config().krHysteresisModel() < 0)
+        if (!params.config().active() || params.config().krHysteresisModel() < 0)
             return EffectiveLaw::twoPhaseSatKrw(params.drainageParams(), Sw);
 
         if (params.config().krHysteresisModel() == 0)
@@ -254,7 +254,7 @@ public:
     static Evaluation twoPhaseSatKrn(const Params& params, const Evaluation& Sw)
     {
         // if no relperm hysteresis is enabled, use the drainage curve
-        if (!params.config().enableHysteresis() || params.config().krHysteresisModel() < 0)
+        if (!params.config().active() || params.config().krHysteresisModel() < 0)
             return EffectiveLaw::twoPhaseSatKrn(params.drainageParams(), Sw);
 
         // if it is enabled, use either the drainage or the imbibition curve. if the

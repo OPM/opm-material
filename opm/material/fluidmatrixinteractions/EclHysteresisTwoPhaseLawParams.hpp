@@ -27,13 +27,9 @@
 #ifndef OPM_ECL_HYSTERESIS_TWO_PHASE_LAW_PARAMS_HPP
 #define OPM_ECL_HYSTERESIS_TWO_PHASE_LAW_PARAMS_HPP
 
-#include "EclHysteresisConfig.hpp"
 #include "EclEpsScalingPoints.hpp"
 
-#if HAVE_ECL_INPUT
-#include <opm/parser/eclipse/Deck/Deck.hpp>
-#include <opm/parser/eclipse/EclipseState/EclipseState.hpp>
-#endif
+#include <opm/parser/eclipse/EclipseState/Runspec.hpp>
 
 #include <string>
 #include <memory>
@@ -77,7 +73,7 @@ public:
      */
     void finalize()
     {
-        if (config().enableHysteresis()) {
+        if (config().active()) {
             //C_ = 1.0/(Sncri_ - Sncrd_) + 1.0/(Snmaxd_ - Sncrd_);
 
             updateDynamicParams_();
@@ -89,13 +85,13 @@ public:
     /*!
      * \brief Set the endpoint scaling configuration object.
      */
-    void setConfig(std::shared_ptr<EclHysteresisConfig> value)
+    void setConfig(std::shared_ptr<Opm::EclHysterConfig> value)
     { config_ = value; }
 
     /*!
      * \brief Returns the endpoint scaling configuration object.
      */
-    const EclHysteresisConfig& config() const
+    const Opm::EclHysterConfig& config() const
     { return *config_; }
 
     /*!
@@ -307,7 +303,7 @@ private:
 #endif
     }
 
-    std::shared_ptr<EclHysteresisConfig> config_;
+    std::shared_ptr<Opm::EclHysterConfig> config_;
     EffLawParams imbibitionParams_;
     EffLawParams drainageParams_;
 

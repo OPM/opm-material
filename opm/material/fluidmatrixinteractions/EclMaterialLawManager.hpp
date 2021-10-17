@@ -24,10 +24,6 @@
  * \file
  * \copydoc Opm::EclMaterialLawManager
  */
-#if ! HAVE_ECL_INPUT
-#error "Eclipse input support in opm-common is required to use the ECL material manager!"
-#endif
-
 #ifndef OPM_ECL_MATERIAL_LAW_MANAGER_HPP
 #define OPM_ECL_MATERIAL_LAW_MANAGER_HPP
 
@@ -37,18 +33,15 @@
 #include <opm/material/fluidmatrixinteractions/EclHysteresisTwoPhaseLaw.hpp>
 #include <opm/material/fluidmatrixinteractions/EclEpsScalingPoints.hpp>
 #include <opm/material/fluidmatrixinteractions/EclEpsConfig.hpp>
-#include <opm/material/fluidmatrixinteractions/EclHysteresisConfig.hpp>
 #include <opm/material/fluidmatrixinteractions/EclMultiplexerMaterial.hpp>
 #include <opm/material/fluidmatrixinteractions/MaterialTraits.hpp>
 #include <opm/material/fluidstates/SimpleModularFluidState.hpp>
 
-#if HAVE_OPM_COMMON
-#include <opm/common/OpmLog/OpmLog.hpp>
-#endif
-
 #include <opm/parser/eclipse/EclipseState/EclipseState.hpp>
 #include <opm/parser/eclipse/EclipseState/Tables/TableManager.hpp>
 #include <opm/parser/eclipse/EclipseState/Tables/TableColumn.hpp>
+#include <opm/parser/eclipse/EclipseState/Runspec.hpp>
+#include <opm/common/OpmLog/OpmLog.hpp>
 
 #include <algorithm>
 #include <cassert>
@@ -513,7 +506,7 @@ public:
     { return enableEndPointScaling_; }
 
     bool enableHysteresis() const
-    { return hysteresisConfig_->enableHysteresis(); }
+    { return hysteresisConfig_->active(); }
 
     MaterialLawParams& materialLawParams(unsigned elemIdx)
     {
@@ -539,10 +532,8 @@ public:
     {
         MaterialLawParams& mlp = *materialLawParams_[elemIdx];
 
-#if HAVE_OPM_COMMON
         if (enableHysteresis())
             OpmLog::warning("Warning: Using non-default satnum regions for conenction is not tested in combination with hysteresis");
-#endif
         // Currently we don't support COMPIMP. I.e. use the same table lookup for the hysteresis curves.
         // unsigned impRegionIdx = satRegionIdx;
 
@@ -727,8 +718,7 @@ private:
 
     void readGlobalHysteresisOptions_(const EclipseState& state)
     {
-        hysteresisConfig_ = std::make_shared<EclHysteresisConfig>();
-        hysteresisConfig_->initFromState(state.runspec());
+        hysteresisConfig_ = std::make_shared<Opm::EclHysterConfig>( state.runspec().hysterPar() );
     }
 
     void readGlobalThreePhaseOptions_(const Runspec& runspec)
@@ -1166,7 +1156,7 @@ private:
     }
 
     bool enableEndPointScaling_;
-    std::shared_ptr<EclHysteresisConfig> hysteresisConfig_;
+    std::shared_ptr<Opm::EclHysterConfig> hysteresisConfig_;
 
     std::shared_ptr<EclEpsConfig> oilWaterEclEpsConfig_;
     std::vector<EclEpsScalingPointsInfo<Scalar>> unscaledEpsInfo_;
