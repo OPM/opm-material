@@ -2,10 +2,10 @@
 # spec file for package opm-material
 #
 
-%define tag final
+%define tag rc1
 
 Name:           opm-material
-Version:        2018.10
+Version:        2021.10
 Release:        0
 Summary:        Open Porous Media - thermodynamic framework library
 License:        GPL-3.0
