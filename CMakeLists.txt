@@ -110,6 +110,10 @@ opm_add_test(test_2dtables)
 opm_add_test(test_components)
 opm_add_test(test_fluidsystems)
 opm_add_test(test_immiscibleflash)
+<<<<<<< HEAD
 
 install(DIRECTORY doc/man1 DESTINATION ${CMAKE_INSTALL_MANDIR}
   FILES_MATCHING PATTERN "*.1")
+=======
+opm_add_test(test_chiflash)
+>>>>>>> bb846316 ([WIP] Add ChiFlash and test. Not compiling.)
