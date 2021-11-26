@@ -116,4 +116,8 @@ install(DIRECTORY doc/man1 DESTINATION ${CMAKE_INSTALL_MANDIR}
   FILES_MATCHING PATTERN "*.1")
 =======
 opm_add_test(test_chiflash)
+<<<<<<< HEAD
 >>>>>>> bb846316 ([WIP] Add ChiFlash and test. Not compiling.)
+=======
+opm_add_test(test_chiflash_scalar)
+>>>>>>> f08ec1f9 (added a scalar test)
