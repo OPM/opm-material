@@ -120,4 +120,8 @@ opm_add_test(test_chiflash)
 >>>>>>> bb846316 ([WIP] Add ChiFlash and test. Not compiling.)
 =======
 opm_add_test(test_chiflash_scalar)
+<<<<<<< HEAD
 >>>>>>> f08ec1f9 (added a scalar test)
+=======
+opm_add_test(test_chiflashspe5)
+>>>>>>> d38cbcb0 (adding the spe5 using chiflash)
