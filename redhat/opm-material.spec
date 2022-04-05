@@ -3,6 +3,11 @@
 #
 
 %define tag final
+%define rtype release
+%define toolset devtoolset-9
+%define build_openmpi 1
+%define build_openmpi3 1
+%define build_mpich 1
 
 Name:           opm-material
 Version:        2018.10
@@ -12,13 +17,37 @@ License:        GPL-3.0
 Group:          Development/Libraries/C and C++
 Url:            http://www.opm-project.org/
 Source0:        https://github.com/OPM/%{name}/archive/release/%{version}/%{tag}.tar.gz#/%{name}-%{version}.tar.gz
-BuildRequires:  blas-devel lapack-devel dune-common-devel
-BuildRequires:  git suitesparse-devel doxygen bc openblas-devel
-BuildRequires:  tinyxml-devel dune-istl-devel
-BuildRequires:  opm-common-devel opm-common-openmpi-devel openmpi-devel opm-common-mpich-devel mpich-devel
-BuildRequires:  cmake3
-%{?!el8:BuildRequires: devtoolset-8-toolchain}
-BuildRequires: boost-devel
+BuildRequires: blas-devel lapack-devel
+BuildRequires: git suitesparse-devel doxygen bc openblas-devel
+BuildRequires: tinyxml-devel
+BuildRequires: cmake3
+BuildRequires: %{toolset}-toolchain
+BuildRequires: boost-devel tbb-devel python3-devel
+BuildRequires: dune-common-devel
+BuildRequires: dune-istl-devel
+BuildRequires: opm-common-devel
+
+%if %{build_openmpi}
+BuildRequires: openmpi-devel
+BuildRequires: dune-common-openmpi-devel
+BuildRequires: dune-istl-openmpi-devel
+BuildRequires: opm-common-openmpi-devel
+%endif
+
+%if %{build_openmpi3}
+BuildRequires: openmpi3-devel
+BuildRequires: dune-common-openmpi3-devel
+BuildRequires: dune-istl-openmpi3-devel
+BuildRequires: opm-common-openmpi3-devel
+%endif
+
+%if %{build_mpich}
+BuildRequires: mpich-devel
+BuildRequires: dune-common-mpich-devel
+BuildRequires: dune-istl-mpich-devel
+BuildRequires: opm-common-mpich-devel
+%endif
+
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 
 %description
@@ -31,22 +60,6 @@ Group:          Development/Libraries/C and C++
 %description devel
 This package contains the development and header files for opm-material
 
-%package openmpi-devel
-Summary:        Development and header files for opm-material with openmpi
-Group:          Development/Libraries/C and C++
-
-%description openmpi-devel
-This package contains the development and header files for opm-material with
-openMPI.
-
-%package mpich-devel
-Summary:        Development and header files for opm-material with mpich
-Group:          Development/Libraries/C and C++
-
-%description mpich-devel
-This package contains the development and header files for opm-material with
-mpich.
-
 %package doc
 Summary:        Documentation files for opm-material
 Group:          Documentation
@@ -55,51 +68,99 @@ BuildArch:	noarch
 %description doc
 This package contains the documentation files for opm-material
 
+%if %{build_openmpi}
+%package openmpi-devel
+Summary:        Development and header files for opm-material with openmpi
+Group:          Development/Libraries/C and C++
+
+%description openmpi-devel
+This package contains the development and header files for opm-material with
+openMPI.
+%endif
+
+%if %{build_openmpi3}
+%package openmpi3-devel
+Summary:        Development and header files for opm-material with openmpi3
+Group:          Development/Libraries/C and C++
+
+%description openmpi3-devel
+This package contains the development and header files for opm-material with
+openMPI3.
+%endif
+
+%if %{build_mpich}
+%package mpich-devel
+Summary:        Development and header files for opm-material with mpich
+Group:          Development/Libraries/C and C++
+
+%description mpich-devel
+This package contains the development and header files for opm-material with
+mpich.
+%endif
+
 %global debug_package %{nil}
 
 %prep
-%setup -q -n %{name}-release-%{version}-%{tag}
+%setup -q -n %{name}-%{rtype}-%{version}-%{tag}
 
 # consider using -DUSE_VERSIONED_DIR=ON if backporting
 %build
 mkdir serial
-cd serial
-cmake3 -DENABLE_MPI=0 -DBUILD_SHARED_LIBS=1 -DCMAKE_BUILD_TYPE=RelWithDebInfo -DSTRIP_DEBUGGING_SYMBOLS=ON -DCMAKE_INSTALL_PREFIX=%{_prefix} -DCMAKE_INSTALL_DOCDIR=share/doc/%{name}-%{version} -DUSE_RUNPATH=OFF -DWITH_NATIVE=OFF %{?!el8:-DCMAKE_CXX_COMPILER=/opt/rh/devtoolset-8/root/usr/bin/g++ -DCMAKE_C_COMPILER=/opt/rh/devtoolset-8/root/usr/bin/gcc -DCMAKE_Fortran_COMPILER=/opt/rh/devtoolset-8/root/usr/bin/gfortran} ..
-make %{?_smp_mflags}
-make test
-cd ..
+pushd serial
+scl enable %{toolset} 'cmake3 -DENABLE_MPI=0 -DBUILD_SHARED_LIBS=1 -DCMAKE_BUILD_TYPE=RelWithDebInfo -DSTRIP_DEBUGGING_SYMBOLS=ON -DCMAKE_INSTALL_PREFIX=%{_prefix} -DCMAKE_INSTALL_DOCDIR=share/doc/%{name}-%{version} -DUSE_RUNPATH=OFF -DWITH_NATIVE=OFF  ..'
+scl enable %{toolset} 'make %{?_smp_mflags}'
+scl enable %{toolset} 'make test'
+popd
 
+%if %{build_openmpi}
 mkdir openmpi
-cd openmpi
-%{?el6:module load openmpi-x86_64}
-%{?!el6:module load mpi/openmpi-x86_64}
-cmake3 -DUSE_MPI=1 -DBUILD_SHARED_LIBS=1 -DCMAKE_BUILD_TYPE=RelWithDebInfo -DSTRIP_DEBUGGING_SYMBOLS=ON -DCMAKE_INSTALL_PREFIX=%{_prefix}/lib64/openmpi -DCMAKE_INSTALL_LIBDIR=lib -DUSE_RUNPATH=OFF -DWITH_NATIVE=OFF %{?!el8:-DCMAKE_CXX_COMPILER=/opt/rh/devtoolset-8/root/usr/bin/g++ -DCMAKE_C_COMPILER=/opt/rh/devtoolset-8/root/usr/bin/gcc -DCMAKE_Fortran_COMPILER=/opt/rh/devtoolset-8/root/usr/bin/gfortran} -DCMAKE_INSTALL_INCLUDE_DIR=%{_prefix}/include/openmpi-x86_64 ..
-make %{?_smp_mflags}
-make test
-cd ..
+pushd openmpi
+module load mpi/openmpi-x86_64
+scl enable %{toolset} 'cmake3 -DUSE_MPI=1 -DBUILD_SHARED_LIBS=1 -DCMAKE_BUILD_TYPE=RelWithDebInfo -DSTRIP_DEBUGGING_SYMBOLS=ON -DCMAKE_INSTALL_PREFIX=%{_prefix}/lib64/openmpi -DCMAKE_INSTALL_LIBDIR=lib -DUSE_RUNPATH=OFF -DWITH_NATIVE=OFF  -DCMAKE_INSTALL_INCLUDE_DIR=%{_prefix}/include/openmpi-x86_64 ..'
+scl enable %{toolset} 'make %{?_smp_mflags}'
+scl enable %{toolset} 'make test'
+module unload mpi/openmpi-x86_64
+popd
+%endif
 
+%if %{build_openmpi3}
+mkdir openmpi3
+pushd openmpi3
+module load mpi/openmpi3-x86_64
+scl enable %{toolset} 'cmake3 -DUSE_MPI=1 -DBUILD_SHARED_LIBS=1 -DCMAKE_BUILD_TYPE=RelWithDebInfo -DSTRIP_DEBUGGING_SYMBOLS=ON -DCMAKE_INSTALL_PREFIX=%{_prefix}/lib64/openmpi3 -DCMAKE_INSTALL_LIBDIR=lib -DUSE_RUNPATH=OFF -DWITH_NATIVE=OFF  -DCMAKE_INSTALL_INCLUDE_DIR=%{_prefix}/include/openmpi3-x86_64 ..'
+scl enable %{toolset} 'make %{?_smp_mflags}'
+scl enable %{toolset} 'make test'
+module unload mpi/openmpi3-x86_64
+popd
+%endif
+
+%if %{build_mpich}
 mkdir mpich
-cd mpich
-%{?el6:module rm openmpi-x86_64}
-%{?el6:module load mpich-x86_64}
-%{?!el6:module rm mpi/openmpi-x86_64}
-%{?!el6:module load mpi/mpich-x86_64}
-cmake3 -DUSE_MPI=1 -DBUILD_SHARED_LIBS=1 -DCMAKE_BUILD_TYPE=RelWithDebInfo -DSTRIP_DEBUGGING_SYMBOLS=ON -DCMAKE_INSTALL_PREFIX=%{_prefix}/lib64/mpich -DCMAKE_INSTALL_LIBDIR=lib -DUSE_RUNPATH=OFF -DWITH_NATIVE=OFF %{?!el8:-DCMAKE_CXX_COMPILER=/opt/rh/devtoolset-8/root/usr/bin/g++ -DCMAKE_C_COMPILER=/opt/rh/devtoolset-8/root/usr/bin/gcc -DCMAKE_Fortran_COMPILER=/opt/rh/devtoolset-8/root/usr/bin/gfortran} -DCMAKE_INSTALL_INCLUDE_DIR=%{_prefix}/include/mpich-x86_64 ..
-make %{?_smp_mflags}
-make test
+pushd mpich
+module load mpi/mpich-x86_64
+scl enable %{toolset} 'cmake3 -DUSE_MPI=1 -DBUILD_SHARED_LIBS=1 -DCMAKE_BUILD_TYPE=RelWithDebInfo -DSTRIP_DEBUGGING_SYMBOLS=ON -DCMAKE_INSTALL_PREFIX=%{_prefix}/lib64/mpich -DCMAKE_INSTALL_LIBDIR=lib -DUSE_RUNPATH=OFF -DWITH_NATIVE=OFF  -DCMAKE_INSTALL_INCLUDE_DIR=%{_prefix}/include/mpich-x86_64 ..'
+scl enable %{toolset} 'make %{?_smp_mflags}'
+scl enable %{toolset} 'make test'
+%endif
 
 %install
-cd serial
-make install DESTDIR=${RPM_BUILD_ROOT}
-make install-html DESTDIR=${RPM_BUILD_ROOT}
-cd ..
-cd openmpi
-make install DESTDIR=${RPM_BUILD_ROOT}
+scl enable %{toolset} 'make install DESTDIR=${RPM_BUILD_ROOT} -C serial'
+scl enable %{toolset} 'make install-html DESTDIR=${RPM_BUILD_ROOT} -C serial'
+
+%if %{build_openmpi}
+scl enable %{toolset} 'make install DESTDIR=${RPM_BUILD_ROOT} -C openmpi'
 mv ${RPM_BUILD_ROOT}/%{_libdir}/openmpi/include/* ${RPM_BUILD_ROOT}/usr/include/openmpi-x86_64/
-cd ..
-cd mpich
-make install DESTDIR=${RPM_BUILD_ROOT}
+%endif
+
+%if %{build_openmpi3}
+scl enable %{toolset} 'make install DESTDIR=${RPM_BUILD_ROOT} -C openmpi3'
+mv ${RPM_BUILD_ROOT}/%{_libdir}/openmpi3/include/* ${RPM_BUILD_ROOT}/usr/include/openmpi3-x86_64/
+%endif
+
+%if %{build_mpich}
+scl enable %{toolset} 'make install DESTDIR=${RPM_BUILD_ROOT} -C mpich'
 mv ${RPM_BUILD_ROOT}/%{_libdir}/mpich/include/* ${RPM_BUILD_ROOT}/usr/include/mpich-x86_64/
+%endif
 
 %clean
 rm -rf %{buildroot}
@@ -115,6 +176,7 @@ rm -rf %{buildroot}
 %{_datadir}/cmake/*
 %{_datadir}/opm/cmake/Modules/*
 
+%if %{build_openmpi}
 %files openmpi-devel
 %defattr(-,root,root,-)
 %{_libdir}/openmpi/lib/dunecontrol/*
@@ -122,7 +184,19 @@ rm -rf %{buildroot}
 %{_includedir}/openmpi-x86_64/*
 %{_libdir}/openmpi/share/cmake/*
 %{_libdir}/openmpi/share/opm/cmake/Modules/*
+%endif
 
+%if %{build_openmpi3}
+%files openmpi3-devel
+%defattr(-,root,root,-)
+%{_libdir}/openmpi3/lib/dunecontrol/*
+%{_libdir}/openmpi3/lib/pkgconfig/*
+%{_includedir}/openmpi3-x86_64/*
+%{_libdir}/openmpi3/share/cmake/*
+%{_libdir}/openmpi3/share/opm/cmake/Modules/*
+%endif
+
+%if %{build_mpich}
 %files mpich-devel
 %defattr(-,root,root,-)
 %{_libdir}/mpich/lib/dunecontrol/*
@@ -130,3 +204,4 @@ rm -rf %{buildroot}
 %{_includedir}/mpich-x86_64/*
 %{_libdir}/mpich/share/cmake/*
 %{_libdir}/mpich/share/opm/cmake/Modules/*
+%endif
