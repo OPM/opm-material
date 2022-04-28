@@ -111,5 +111,5 @@ opm_add_test(test_components)
 opm_add_test(test_fluidsystems)
 opm_add_test(test_immiscibleflash)
 
-install(DIRECTORY docs/man1 DESTINATION ${CMAKE_INSTALL_MANDIR}
+install(DIRECTORY doc/man1 DESTINATION ${CMAKE_INSTALL_MANDIR}
   FILES_MATCHING PATTERN "*.1")
