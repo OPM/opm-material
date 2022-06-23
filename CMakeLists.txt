@@ -112,5 +112,6 @@ opm_add_test(test_fluidsystems)
 opm_add_test(test_immiscibleflash)
 opm_add_test(test_chiflash)
 opm_add_test(test_co2brine_flash)
+
 install(DIRECTORY doc/man1 DESTINATION ${CMAKE_INSTALL_MANDIR}
   FILES_MATCHING PATTERN "*.1")
