@@ -110,6 +110,8 @@ opm_add_test(test_2dtables)
 opm_add_test(test_components)
 opm_add_test(test_fluidsystems)
 opm_add_test(test_immiscibleflash)
+opm_add_test(test_threecomponents_ptflash)
+opm_add_test(test_co2brine_ptflash)
 
 install(DIRECTORY doc/man1 DESTINATION ${CMAKE_INSTALL_MANDIR}
   FILES_MATCHING PATTERN "*.1")
