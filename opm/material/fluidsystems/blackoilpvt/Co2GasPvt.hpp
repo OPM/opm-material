@@ -27,23 +27,13 @@
 #ifndef OPM_CO2_GAS_PVT_HPP
 #define OPM_CO2_GAS_PVT_HPP
 
-#include <opm/material/Constants.hpp>
-
-#include <opm/material/components/CO2.hpp>
-#include <opm/material/components/SimpleHuDuanH2O.hpp>
-#include <opm/material/common/UniformTabulated2DFunction.hpp>
-#include <opm/material/binarycoefficients/Brine_CO2.hpp>
-#include <opm/material/components/co2tables.inc>
-
-#if HAVE_ECL_INPUT
-#include <opm/input/eclipse/EclipseState/EclipseState.hpp>
-#include <opm/input/eclipse/Schedule/Schedule.hpp>
-#include <opm/input/eclipse/EclipseState/Tables/TableManager.hpp>
-#endif
-
 #include <vector>
 
 namespace Opm {
+
+class EclipseState;
+class Schedule;
+
 /*!
  * \brief This class represents the Pressure-Volume-Temperature relations of the gas phase
  * for CO2
@@ -51,61 +41,26 @@ namespace Opm {
 template <class Scalar>
 class Co2GasPvt
 {
-    using CO2 = ::Opm::CO2<Scalar, CO2Tables>;
-    using H2O = SimpleHuDuanH2O<Scalar>;
     static constexpr bool extrapolate = true;
 
 public:
     //! The binary coefficients for brine and CO2 used by this fluid system
-    using BinaryCoeffBrineCO2 = BinaryCoeff::Brine_CO2<Scalar, H2O, CO2>;
 
     explicit Co2GasPvt() = default;
-    Co2GasPvt(const std::vector<Scalar>& gasReferenceDensity)
-        : gasReferenceDensity_(gasReferenceDensity)
-    {
-    }
+    Co2GasPvt(const std::vector<Scalar>& gasReferenceDensity);
 
     Co2GasPvt(size_t numRegions,
               Scalar T_ref = 288.71, //(273.15 + 15.56)
-              Scalar P_ref = 101325)
-    {
-        setNumRegions(numRegions);
-        for (size_t i = 0; i < numRegions; ++i) {
-            gasReferenceDensity_[i] = CO2::gasDensity(T_ref, P_ref, extrapolate);
-        }
-    }
+              Scalar P_ref = 101325);
+
 #if HAVE_ECL_INPUT
     /*!
      * \brief Initialize the parameters for co2 gas using an ECL deck.
      */
-    void initFromState(const EclipseState& eclState, const Schedule&)
-    {
-        if( !eclState.getTableManager().getDensityTable().empty()) {
-            std::cerr << "WARNING: CO2STOR is enabled but DENSITY is in the deck. \n" <<
-                         "The surface density is computed based on CO2-BRINE PVT at standard conditions (STCOND) and DENSITY is ignored " << std::endl;
-        }
-
-        if( eclState.getTableManager().hasTables("PVDG") || !eclState.getTableManager().getPvtgTables().empty()) {
-            std::cerr << "WARNING: CO2STOR is enabled but PVDG or PVTG is in the deck. \n" <<
-                         "CO2 PVT properties are computed based on the Span-Wagner pvt model and PVDG/PVTG input is ignored. " << std::endl;
-        }
-
-        // We only supported single pvt region for the co2-brine module
-        size_t numRegions = 1;
-        setNumRegions(numRegions);
-        size_t regionIdx = 0;
-        Scalar T_ref = eclState.getTableManager().stCond().temperature;
-        Scalar P_ref = eclState.getTableManager().stCond().pressure;
-        gasReferenceDensity_[regionIdx] = CO2::gasDensity(T_ref, P_ref, extrapolate);
-        initEnd();
-    }
+    void initFromState(const EclipseState& eclState, const Schedule&);
 #endif
 
-    void setNumRegions(size_t numRegions)
-    {
-        gasReferenceDensity_.resize(numRegions);
-    }
-
+    void setNumRegions(size_t numRegions);
 
     /*!
      * \brief Initialize the reference densities of all fluids for a given PVT region
@@ -113,17 +68,13 @@ public:
     void setReferenceDensities(unsigned regionIdx,
                                Scalar /*rhoRefOil*/,
                                Scalar rhoRefGas,
-                               Scalar /*rhoRefWater*/)
-    {
-        gasReferenceDensity_[regionIdx] = rhoRefGas;
-    }
+                               Scalar /*rhoRefWater*/);
 
     /*!
      * \brief Finish initializing the oil phase PVT properties.
      */
     void initEnd()
     {
-
     }
 
     /*!
@@ -139,10 +90,7 @@ public:
     Evaluation internalEnergy(unsigned,
                         const Evaluation& temperature,
                         const Evaluation& pressure,
-                        const Evaluation&) const
-    {
-        return CO2::gasInternalEnergy(temperature, pressure, extrapolate);
-    }
+                        const Evaluation&) const;
 
     /*!
      * \brief Returns the dynamic viscosity [Pa s] of the fluid phase given a set of parameters.
@@ -152,8 +100,7 @@ public:
                          const Evaluation& temperature,
                          const Evaluation& pressure,
                          const Evaluation& /*Rv*/,
-                         const Evaluation& /*Rvw*/) const
-    { return saturatedViscosity(regionIdx, temperature, pressure); }
+                         const Evaluation& /*Rvw*/) const;
 
     /*!
      * \brief Returns the dynamic viscosity [Pa s] of oil saturated gas at given pressure.
@@ -161,10 +108,7 @@ public:
     template <class Evaluation>
     Evaluation saturatedViscosity(unsigned /*regionIdx*/,
                                   const Evaluation& temperature,
-                                  const Evaluation& pressure) const
-    {
-        return CO2::gasViscosity(temperature, pressure, extrapolate);
-    }
+                                  const Evaluation& pressure) const;
 
     /*!
      * \brief Returns the formation volume factor [-] of the fluid phase.
@@ -174,8 +118,7 @@ public:
                                             const Evaluation& temperature,
                                             const Evaluation& pressure,
                                             const Evaluation& /*Rv*/,
-                                            const Evaluation& /*Rvw*/) const
-    { return saturatedInverseFormationVolumeFactor(regionIdx, temperature, pressure); }
+                                            const Evaluation& /*Rvw*/) const;
 
     /*!
      * \brief Returns the formation volume factor [-] of oil saturated gas at given pressure.
@@ -183,10 +126,7 @@ public:
     template <class Evaluation>
     Evaluation saturatedInverseFormationVolumeFactor(unsigned regionIdx,
                                                      const Evaluation& temperature,
-                                                     const Evaluation& pressure) const
-    {
-        return CO2::gasDensity(temperature, pressure, extrapolate)/gasReferenceDensity_[regionIdx];
-    }
+                                                     const Evaluation& pressure) const;
 
     /*!
      * \brief Returns the saturation pressure of the gas phase [Pa]
@@ -197,8 +137,7 @@ public:
     template <class Evaluation>
     Evaluation saturationPressure(unsigned /*regionIdx*/,
                                   const Evaluation& /*temperature*/,
-                                  const Evaluation& /*Rv*/) const
-    { return 0.0; /* this is dry gas! */ }
+                                  const Evaluation& /*Rv*/) const;
 
     /*!
      * \brief Returns the water vaporization factor \f$R_vw\f$ [m^3/m^3] of the water phase.
@@ -206,8 +145,7 @@ public:
     template <class Evaluation>
     Evaluation saturatedWaterVaporizationFactor(unsigned /*regionIdx*/,
                                               const Evaluation& /*temperature*/,
-                                              const Evaluation& /*pressure*/) const
-    { return 0.0; /* this is non-humid gas! */ }
+                                              const Evaluation& /*pressure*/) const;
 
     /*!
      * \brief Returns the oil vaporization factor \f$R_v\f$ [m^3/m^3] of the oil phase.
@@ -217,8 +155,7 @@ public:
                                               const Evaluation& /*temperature*/,
                                               const Evaluation& /*pressure*/,
                                               const Evaluation& /*oilSaturation*/,
-                                              const Evaluation& /*maxOilSaturation*/) const
-    { return 0.0; /* this is dry gas! */ }
+                                              const Evaluation& /*maxOilSaturation*/) const;
 
     /*!
      * \brief Returns the oil vaporization factor \f$R_v\f$ [m^3/m^3] of the oil phase.
@@ -226,29 +163,24 @@ public:
     template <class Evaluation>
     Evaluation saturatedOilVaporizationFactor(unsigned /*regionIdx*/,
                                               const Evaluation& /*temperature*/,
-                                              const Evaluation& /*pressure*/) const
-    { return 0.0; /* this is dry gas! */ }
+                                              const Evaluation& /*pressure*/) const;
 
     template <class Evaluation>
     Evaluation diffusionCoefficient(const Evaluation& temperature,
                                     const Evaluation& pressure,
-                                    unsigned /*compIdx*/) const
-    {
-        return BinaryCoeffBrineCO2::gasDiffCoeff(temperature, pressure, extrapolate);
-    }
+                                    unsigned /*compIdx*/) const;
 
     const Scalar gasReferenceDensity(unsigned regionIdx) const
     { return gasReferenceDensity_[regionIdx]; }
 
-    bool operator==(const Co2GasPvt<Scalar>& data) const
-    {
-        return gasReferenceDensity_ == data.gasReferenceDensity_;
-    }
+    bool operator==(const Co2GasPvt<Scalar>& data) const;
 
 private:
     std::vector<Scalar> gasReferenceDensity_;
 };
 
 } // namespace Opm
+
+#include <opm/material/fluidsystems/blackoilpvt/Co2GasPvt_impl.hpp>
 
 #endif
