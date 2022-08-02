@@ -29,16 +29,13 @@
 
 #include <opm/material/common/Tabulated1DFunction.hpp>
 
-#if HAVE_ECL_INPUT
-#include <opm/input/eclipse/EclipseState/EclipseState.hpp>
-#include <opm/input/eclipse/Schedule/Schedule.hpp>
-#include <opm/input/eclipse/EclipseState/Tables/TableManager.hpp>
-#include <opm/input/eclipse/EclipseState/Tables/PvdsTable.hpp>
-#endif
-
 #include <vector>
 
 namespace Opm {
+
+class EclipseState;
+class Schedule;
+
 /*!
  * \brief This class represents the Pressure-Volume-Temperature relations of the "second"
  *        gas phase in the of ECL simulations with solvents.
@@ -55,13 +52,7 @@ public:
     SolventPvt(const std::vector<Scalar>& solventReferenceDensity,
                const std::vector<TabulatedOneDFunction>& inverseSolventB,
                const std::vector<TabulatedOneDFunction>& solventMu,
-               const std::vector<TabulatedOneDFunction>& inverseSolventBMu)
-        : solventReferenceDensity_(solventReferenceDensity)
-        , inverseSolventB_(inverseSolventB)
-        , solventMu_(solventMu)
-        , inverseSolventBMu_(inverseSolventBMu)
-    {
-    }
+               const std::vector<TabulatedOneDFunction>& inverseSolventBMu);
 
 #if HAVE_ECL_INPUT
     /*!
@@ -69,103 +60,35 @@ public:
      *
      * This method assumes that the deck features valid SDENSITY and PVDS keywords.
      */
-    void initFromState(const EclipseState& eclState, const Schedule&)
-    {
-        const auto& pvdsTables = eclState.getTableManager().getPvdsTables();
-        const auto& sdensityTables = eclState.getTableManager().getSolventDensityTables();
-
-        assert(pvdsTables.size() == sdensityTables.size());
-
-        size_t numRegions = pvdsTables.size();
-        setNumRegions(numRegions);
-
-        for (unsigned regionIdx = 0; regionIdx < numRegions; ++ regionIdx) {
-            Scalar rhoRefS = sdensityTables[regionIdx].getSolventDensityColumn().front();
-
-            setReferenceDensity(regionIdx, rhoRefS);
-
-            const auto& pvdsTable = pvdsTables.getTable<PvdsTable>(regionIdx);
-
-            // say 99.97% of all time: "premature optimization is the root of all
-            // evil". Eclipse does this "optimization" for apparently no good reason!
-            std::vector<Scalar> invB(pvdsTable.numRows());
-            const auto& Bg = pvdsTable.getFormationFactorColumn();
-            for (unsigned i = 0; i < Bg.size(); ++ i) {
-                invB[i] = 1.0/Bg[i];
-            }
-
-            size_t numSamples = invB.size();
-            inverseSolventB_[regionIdx].setXYArrays(numSamples, pvdsTable.getPressureColumn(), invB);
-            solventMu_[regionIdx].setXYArrays(numSamples, pvdsTable.getPressureColumn(), pvdsTable.getViscosityColumn());
-        }
-
-        initEnd();
-    }
+    void initFromState(const EclipseState& eclState, const Schedule&);
 #endif
 
-    void setNumRegions(size_t numRegions)
-    {
-        solventReferenceDensity_.resize(numRegions);
-        inverseSolventB_.resize(numRegions);
-        inverseSolventBMu_.resize(numRegions);
-        solventMu_.resize(numRegions);
-    }
+    void setNumRegions(size_t numRegions);
 
     /*!
      * \brief Initialize the reference density of the solvent gas for a given PVT region
      */
-    void setReferenceDensity(unsigned regionIdx, Scalar rhoRefSolvent)
-    { solventReferenceDensity_[regionIdx] = rhoRefSolvent; }
+    void setReferenceDensity(unsigned regionIdx, Scalar rhoRefSolvent);
 
     /*!
      * \brief Initialize the viscosity of the solvent gas phase.
      *
      * This is a function of \f$(p_g)\f$...
      */
-    void setSolventViscosity(unsigned regionIdx, const TabulatedOneDFunction& mug)
-    { solventMu_[regionIdx] = mug; }
+    void setSolventViscosity(unsigned regionIdx, const TabulatedOneDFunction& mug);
 
     /*!
      * \brief Initialize the function for the formation volume factor of solvent gas
      *
      * \param samplePoints A container of \f$(p_g, B_s)\f$ values
      */
-    void setSolventFormationVolumeFactor(unsigned regionIdx, const SamplingPoints& samplePoints)
-    {
-        SamplingPoints tmp(samplePoints);
-        auto it = tmp.begin();
-        const auto& endIt = tmp.end();
-        for (; it != endIt; ++ it)
-            std::get<1>(*it) = 1.0/std::get<1>(*it);
-
-        inverseSolventB_[regionIdx].setContainerOfTuples(tmp);
-        assert(inverseSolventB_[regionIdx].monotonic());
-    }
+    void setSolventFormationVolumeFactor(unsigned regionIdx,
+                                         const SamplingPoints& samplePoints);
 
     /*!
      * \brief Finish initializing the oil phase PVT properties.
      */
-    void initEnd()
-    {
-        // calculate the final 2D functions which are used for interpolation.
-        size_t numRegions = solventMu_.size();
-        for (unsigned regionIdx = 0; regionIdx < numRegions; ++ regionIdx) {
-            // calculate the table which stores the inverse of the product of the solvent
-            // formation volume factor and its viscosity
-            const auto& solventMu = solventMu_[regionIdx];
-            const auto& invSolventB = inverseSolventB_[regionIdx];
-            assert(solventMu.numSamples() == invSolventB.numSamples());
-
-            std::vector<Scalar> pressureValues(solventMu.numSamples());
-            std::vector<Scalar> invSolventBMuValues(solventMu.numSamples());
-            for (unsigned pIdx = 0; pIdx < solventMu.numSamples(); ++pIdx) {
-                pressureValues[pIdx] = invSolventB.xAt(pIdx);
-                invSolventBMuValues[pIdx] = invSolventB.valueAt(pIdx) * (1.0/solventMu.valueAt(pIdx));
-            }
-
-            inverseSolventBMu_[regionIdx].setXYContainers(pressureValues, invSolventBMuValues);
-        }
-    }
+    void initEnd();
 
     /*!
      * \brief Return the number of PVT regions which are considered by this PVT-object.
@@ -179,21 +102,7 @@ public:
     template <class Evaluation>
     Evaluation viscosity(unsigned regionIdx,
                                   const Evaluation&,
-                                  const Evaluation& pressure) const
-    {
-        const Evaluation& invBg = inverseSolventB_[regionIdx].eval(pressure, /*extrapolate=*/true);
-        const Evaluation& invMugBg = inverseSolventBMu_[regionIdx].eval(pressure, /*extrapolate=*/true);
-
-        return invBg/invMugBg;
-    }
-
-    template <class Evaluation>
-    Evaluation diffusionCoefficient(const Evaluation& /*temperature*/,
-                                    const Evaluation& /*pressure*/,
-                                    unsigned /*compIdx*/) const
-    {
-        throw std::runtime_error("Not implemented: The PVT model does not provide a diffusionCoefficient()");
-    }
+                                  const Evaluation& pressure) const;
 
     /*!
      * \brief Return the reference density the solvent phase for a given PVT region
@@ -222,13 +131,7 @@ public:
     const std::vector<TabulatedOneDFunction>& inverseSolventBMu() const
     { return inverseSolventBMu_; }
 
-    bool operator==(const SolventPvt<Scalar>& data) const
-    {
-        return solventReferenceDensity_ == data.solventReferenceDensity_ &&
-               inverseSolventB_ == data.inverseSolventB_ &&
-               solventMu_ == data.solventMu_ &&
-               inverseSolventBMu_ == data.inverseSolventBMu_;
-    }
+    bool operator==(const SolventPvt<Scalar>& data) const;
 
 private:
     std::vector<Scalar> solventReferenceDensity_;
@@ -238,5 +141,7 @@ private:
 };
 
 } // namespace Opm
+
+#include <opm/material/fluidsystems/blackoilpvt/SolventPvt_impl.hpp>
 
 #endif
