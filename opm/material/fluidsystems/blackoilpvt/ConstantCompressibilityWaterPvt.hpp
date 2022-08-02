@@ -27,13 +27,13 @@
 #ifndef OPM_CONSTANT_COMPRESSIBILITY_WATER_PVT_HPP
 #define OPM_CONSTANT_COMPRESSIBILITY_WATER_PVT_HPP
 
-#if HAVE_ECL_INPUT
-#include <opm/input/eclipse/EclipseState/EclipseState.hpp>
-#endif
-
 #include <vector>
 
 namespace Opm {
+
+class EclipseState;
+class Schedule;
+
 /*!
  * \brief This class represents the Pressure-Volume-Temperature relations of the gas phase
  *        without vaporized oil.
@@ -48,58 +48,17 @@ public:
                                     const std::vector<Scalar>& waterReferenceFormationVolumeFactor,
                                     const std::vector<Scalar>& waterCompressibility,
                                     const std::vector<Scalar>& waterViscosity,
-                                    const std::vector<Scalar>& waterViscosibility)
-        : waterReferenceDensity_(waterReferenceDensity)
-        , waterReferencePressure_(waterReferencePressure)
-        , waterReferenceFormationVolumeFactor_(waterReferenceFormationVolumeFactor)
-        , waterCompressibility_(waterCompressibility)
-        , waterViscosity_(waterViscosity)
-        , waterViscosibility_(waterViscosibility)
-    { }
+                                    const std::vector<Scalar>& waterViscosibility);
+
 #if HAVE_ECL_INPUT
     /*!
      * \brief Sets the pressure-dependent water viscosity and density
      *        using a table stemming from the Eclipse PVTW keyword.
      */
-    void initFromState(const EclipseState& eclState, const Schedule&)
-    {
-        const auto& pvtwTable = eclState.getTableManager().getPvtwTable();
-        const auto& densityTable = eclState.getTableManager().getDensityTable();
-
-        assert(pvtwTable.size() == densityTable.size());
-
-        size_t numRegions = pvtwTable.size();
-        setNumRegions(numRegions);
-
-        for (unsigned regionIdx = 0; regionIdx < numRegions; ++ regionIdx) {
-            waterReferenceDensity_[regionIdx] = densityTable[regionIdx].water;
-
-            waterReferencePressure_[regionIdx] = pvtwTable[regionIdx].reference_pressure;
-            waterReferenceFormationVolumeFactor_[regionIdx] = pvtwTable[regionIdx].volume_factor;
-            waterCompressibility_[regionIdx] = pvtwTable[regionIdx].compressibility;
-            waterViscosity_[regionIdx] = pvtwTable[regionIdx].viscosity;
-            waterViscosibility_[regionIdx] = pvtwTable[regionIdx].viscosibility;
-        }
-
-        initEnd();
-    }
+    void initFromState(const EclipseState& eclState, const Schedule&);
 #endif
 
-    void setNumRegions(size_t numRegions)
-    {
-        waterReferenceDensity_.resize(numRegions);
-        waterReferencePressure_.resize(numRegions);
-        waterReferenceFormationVolumeFactor_.resize(numRegions);
-        waterCompressibility_.resize(numRegions);
-        waterViscosity_.resize(numRegions);
-        waterViscosibility_.resize(numRegions);
-
-        for (unsigned regionIdx = 0; regionIdx < numRegions; ++regionIdx) {
-            setReferenceDensities(regionIdx, 650.0, 1.0, 1000.0);
-            setReferenceFormationVolumeFactor(regionIdx, 1.0);
-            setReferencePressure(regionIdx, 1e5);
-        }
-    }
+    void setNumRegions(size_t numRegions);
 
     /*!
      * \brief Set the water reference density [kg / m^3]
@@ -107,41 +66,32 @@ public:
     void setReferenceDensities(unsigned regionIdx,
                                Scalar /*rhoRefOil*/,
                                Scalar /*rhoRefGas*/,
-                               Scalar rhoRefWater)
-    { waterReferenceDensity_[regionIdx] = rhoRefWater; }
+                               Scalar rhoRefWater);
 
     /*!
      * \brief Set the water reference pressure [Pa]
      */
-    void setReferencePressure(unsigned regionIdx, Scalar p)
-    { waterReferencePressure_[regionIdx] = p; }
+    void setReferencePressure(unsigned regionIdx, Scalar p);
 
     /*!
      * \brief Set the viscosity and "viscosibility" of the water phase.
      */
-    void setViscosity(unsigned regionIdx, Scalar muw, Scalar waterViscosibility = 0.0)
-    {
-        waterViscosity_[regionIdx] = muw;
-        waterViscosibility_[regionIdx] = waterViscosibility;
-    }
+    void setViscosity(unsigned regionIdx, Scalar muw, Scalar waterViscosibility = 0.0);
 
     /*!
      * \brief Set the compressibility of the water phase.
      */
-    void setCompressibility(unsigned regionIdx, Scalar waterCompressibility)
-    { waterCompressibility_[regionIdx] = waterCompressibility; }
+    void setCompressibility(unsigned regionIdx, Scalar waterCompressibility);
 
     /*!
      * \brief Set the water reference formation volume factor [-]
      */
-    void setReferenceFormationVolumeFactor(unsigned regionIdx, Scalar BwRef)
-    { waterReferenceFormationVolumeFactor_[regionIdx] = BwRef; }
+    void setReferenceFormationVolumeFactor(unsigned regionIdx, Scalar BwRef);
 
     /*!
      * \brief Set the water "viscosibility" [1/ (Pa s)]
      */
-    void setViscosibility(unsigned regionIdx, Scalar muComp)
-    { waterViscosibility_[regionIdx] = muComp; }
+    void setViscosibility(unsigned regionIdx, Scalar muComp);
 
     /*!
      * \brief Finish initializing the water phase PVT properties.
@@ -162,11 +112,7 @@ public:
     Evaluation internalEnergy(unsigned,
                         const Evaluation&,
                         const Evaluation&,
-                        const Evaluation&) const
-    {
-        throw std::runtime_error("Requested the enthalpy of water but the thermal option is not enabled");
-    }
-
+                        const Evaluation&) const;
 
     /*!
      * \brief Returns the dynamic viscosity [Pa s] of the fluid phase given a set of parameters.
@@ -175,17 +121,7 @@ public:
     Evaluation viscosity(unsigned regionIdx,
                          const Evaluation& temperature,
                          const Evaluation& pressure,
-                         const Evaluation& saltconcentration) const
-    {
-        Scalar BwMuwRef = waterViscosity_[regionIdx]*waterReferenceFormationVolumeFactor_[regionIdx];
-        const Evaluation& bw = inverseFormationVolumeFactor(regionIdx, temperature, pressure, saltconcentration);
-
-        Scalar pRef = waterReferencePressure_[regionIdx];
-        const Evaluation& Y =
-            (waterCompressibility_[regionIdx] - waterViscosibility_[regionIdx])
-            * (pressure - pRef);
-        return BwMuwRef*bw/(1 + Y*(1 + Y/2));
-    }
+                         const Evaluation& saltconcentration) const;
 
     /*!
      * \brief Returns the formation volume factor [-] of the fluid phase.
@@ -194,17 +130,7 @@ public:
     Evaluation inverseFormationVolumeFactor(unsigned regionIdx,
                                             const Evaluation& /*temperature*/,
                                             const Evaluation& pressure,
-                                            const Evaluation& /*saltconcentration*/) const
-    {
-        // cf. ECLiPSE 2011 technical description, p. 116
-        Scalar pRef = waterReferencePressure_[regionIdx];
-        const Evaluation& X = waterCompressibility_[regionIdx]*(pressure - pRef);
-
-        Scalar BwRef = waterReferenceFormationVolumeFactor_[regionIdx];
-
-        // TODO (?): consider the salt concentration of the brine
-        return (1.0 + X*(1.0 + X/2.0))/BwRef;
-    }
+                                            const Evaluation& /*saltconcentration*/) const;
 
     const Scalar waterReferenceDensity(unsigned regionIdx) const
     { return waterReferenceDensity_[regionIdx]; }
@@ -224,15 +150,7 @@ public:
     const std::vector<Scalar>& waterViscosibility() const
     { return waterViscosibility_; }
 
-    bool operator==(const ConstantCompressibilityWaterPvt<Scalar>& data) const
-    {
-        return this->waterReferenceDensity_ == data.waterReferenceDensity_ &&
-               this->waterReferencePressure() == data.waterReferencePressure() &&
-               this->waterReferenceFormationVolumeFactor() == data.waterReferenceFormationVolumeFactor() &&
-               this->waterCompressibility() == data.waterCompressibility() &&
-               this->waterViscosity() == data.waterViscosity() &&
-               this->waterViscosibility() == data.waterViscosibility();
-    }
+    bool operator==(const ConstantCompressibilityWaterPvt<Scalar>& data) const;
 
 private:
     std::vector<Scalar> waterReferenceDensity_;
@@ -244,5 +162,7 @@ private:
 };
 
 } // namespace Opm
+
+#include <opm/material/fluidsystems/blackoilpvt/ConstantCompressibilityWaterPvt_impl.hpp>
 
 #endif
