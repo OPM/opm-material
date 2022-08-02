@@ -282,8 +282,8 @@ public:
         // brine
         if (eclState.runspec().co2Storage()) {
             for (unsigned regionIdx = 0; regionIdx < numRegions; ++regionIdx) {
-                molarMass_[regionIdx][oilCompIdx] = BrineCo2Pvt<Scalar>::Brine::molarMass();
-                molarMass_[regionIdx][gasCompIdx] = BrineCo2Pvt<Scalar>::CO2::molarMass();
+                molarMass_[regionIdx][oilCompIdx] = BrineCo2Pvt<Scalar>::brineMolarMass();
+                molarMass_[regionIdx][gasCompIdx] = BrineCo2Pvt<Scalar>::co2MolarMass();
             }
         }
 
