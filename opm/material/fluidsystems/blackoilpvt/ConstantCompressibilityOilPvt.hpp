@@ -27,12 +27,13 @@
 #ifndef OPM_CONSTANT_COMPRESSIBILITY_OIL_PVT_HPP
 #define OPM_CONSTANT_COMPRESSIBILITY_OIL_PVT_HPP
 
-#if HAVE_ECL_INPUT
-#include <opm/input/eclipse/EclipseState/EclipseState.hpp>
-#include <opm/input/eclipse/Schedule/Schedule.hpp>
-#endif
+#include <vector>
 
 namespace Opm {
+
+class EclipseState;
+class Schedule;
+
 /*!
  * \brief This class represents the Pressure-Volume-Temperature relations of the oil phase
  *        without dissolved gas and constant compressibility/"viscosibility".
@@ -47,14 +48,7 @@ public:
                                   const std::vector<Scalar>& oilReferenceFormationVolumeFactor,
                                   const std::vector<Scalar>& oilCompressibility,
                                   const std::vector<Scalar>& oilViscosity,
-                                  const std::vector<Scalar>& oilViscosibility)
-        : oilReferenceDensity_(oilReferenceDensity)
-        , oilReferencePressure_(oilReferencePressure)
-        , oilReferenceFormationVolumeFactor_(oilReferenceFormationVolumeFactor)
-        , oilCompressibility_(oilCompressibility)
-        , oilViscosity_(oilViscosity)
-        , oilViscosibility_(oilViscosibility)
-    { }
+                                  const std::vector<Scalar>& oilViscosibility);
 
 #if HAVE_ECL_INPUT
 
@@ -65,48 +59,10 @@ public:
     /*!
      * \brief Initialize the oil parameters via the data specified by the PVTO ECL keyword.
      */
-    void initFromState(const EclipseState& eclState, const Schedule&)
-    {
-        const auto& pvcdoTable = eclState.getTableManager().getPvcdoTable();
-        const auto& densityTable = eclState.getTableManager().getDensityTable();
-
-        assert(pvcdoTable.size() == densityTable.size());
-
-        size_t numRegions = pvcdoTable.size();
-        setNumRegions(numRegions);
-
-        for (unsigned regionIdx = 0; regionIdx < numRegions; ++ regionIdx) {
-            Scalar rhoRefO = densityTable[regionIdx].oil;
-            Scalar rhoRefG = densityTable[regionIdx].gas;
-            Scalar rhoRefW = densityTable[regionIdx].water;
-
-            setReferenceDensities(regionIdx, rhoRefO, rhoRefG, rhoRefW);
-
-            oilReferencePressure_[regionIdx] = pvcdoTable[regionIdx].reference_pressure;
-            oilReferenceFormationVolumeFactor_[regionIdx] = pvcdoTable[regionIdx].volume_factor;
-            oilCompressibility_[regionIdx] = pvcdoTable[regionIdx].compressibility;
-            oilViscosity_[regionIdx] = pvcdoTable[regionIdx].viscosity;
-            oilViscosibility_[regionIdx] = pvcdoTable[regionIdx].viscosibility;
-        }
-
-        initEnd();
-    }
+    void initFromState(const EclipseState& eclState, const Schedule&);
 #endif
 
-    void setNumRegions(size_t numRegions)
-    {
-        oilReferenceDensity_.resize(numRegions);
-        oilReferencePressure_.resize(numRegions);
-        oilReferenceFormationVolumeFactor_.resize(numRegions);
-        oilCompressibility_.resize(numRegions);
-        oilViscosity_.resize(numRegions);
-        oilViscosibility_.resize(numRegions);
-
-        for (unsigned regionIdx = 0; regionIdx < numRegions; ++regionIdx) {
-            setReferenceFormationVolumeFactor(regionIdx, 1.0);
-            setReferencePressure(regionIdx, 1.03125);
-        }
-    }
+    void setNumRegions(size_t numRegions);
 
     /*!
      * \brief Initialize the reference densities of all fluids for a given PVT region
@@ -114,41 +70,32 @@ public:
     void setReferenceDensities(unsigned regionIdx,
                                Scalar rhoRefOil,
                                Scalar /*rhoRefGas*/,
-                               Scalar /*rhoRefWater*/)
-    { oilReferenceDensity_[regionIdx] = rhoRefOil; }
+                               Scalar /*rhoRefWater*/);
 
     /*!
      * \brief Set the viscosity and "viscosibility" of the oil phase.
      */
-    void setViscosity(unsigned regionIdx, Scalar muo, Scalar oilViscosibility = 0.0)
-    {
-        oilViscosity_[regionIdx] = muo;
-        oilViscosibility_[regionIdx] = oilViscosibility;
-    }
+    void setViscosity(unsigned regionIdx, Scalar muo, Scalar oilViscosibility = 0.0);
 
     /*!
      * \brief Set the compressibility of the oil phase.
      */
-    void setCompressibility(unsigned regionIdx, Scalar oilCompressibility)
-    { oilCompressibility_[regionIdx] = oilCompressibility; }
+    void setCompressibility(unsigned regionIdx, Scalar oilCompressibility);
 
     /*!
      * \brief Set the oil reference pressure [Pa]
      */
-    void setReferencePressure(unsigned regionIdx, Scalar p)
-    { oilReferencePressure_[regionIdx] = p; }
+    void setReferencePressure(unsigned regionIdx, Scalar p);
 
     /*!
      * \brief Set the oil reference formation volume factor [-]
      */
-    void setReferenceFormationVolumeFactor(unsigned regionIdx, Scalar BoRef)
-    { oilReferenceFormationVolumeFactor_[regionIdx] = BoRef; }
+    void setReferenceFormationVolumeFactor(unsigned regionIdx, Scalar BoRef);
 
     /*!
      * \brief Set the oil "viscosibility" [1/ (Pa s)]
      */
-    void setViscosibility(unsigned regionIdx, Scalar muComp)
-    { oilViscosibility_[regionIdx] = muComp; }
+    void setViscosibility(unsigned regionIdx, Scalar muComp);
 
     /*!
      * \brief Finish initializing the oil phase PVT properties.
@@ -169,10 +116,7 @@ public:
     Evaluation internalEnergy(unsigned,
                         const Evaluation&,
                         const Evaluation&,
-                        const Evaluation&) const
-    {
-        throw std::runtime_error("Requested the enthalpy of oil but the thermal option is not enabled");
-    }
+                        const Evaluation&) const;
 
     /*!
      * \brief Returns the dynamic viscosity [Pa s] of gas saturated oil given a pressure
@@ -182,8 +126,7 @@ public:
     Evaluation viscosity(unsigned regionIdx,
                          const Evaluation& temperature,
                          const Evaluation& pressure,
-                         const Evaluation& /*Rs*/) const
-    { return saturatedViscosity(regionIdx, temperature, pressure); }
+                         const Evaluation& /*Rs*/) const;
 
     /*!
      * \brief Returns the dynamic viscosity [Pa s] of gas saturated oil given a pressure.
@@ -191,17 +134,7 @@ public:
     template <class Evaluation>
     Evaluation saturatedViscosity(unsigned regionIdx,
                                   const Evaluation& temperature,
-                                  const Evaluation& pressure) const
-    {
-        Scalar BoMuoRef = oilViscosity_[regionIdx]*oilReferenceFormationVolumeFactor_[regionIdx];
-        const Evaluation& bo = saturatedInverseFormationVolumeFactor(regionIdx, temperature, pressure);
-
-        Scalar pRef = oilReferencePressure_[regionIdx];
-        const Evaluation& Y =
-            (oilCompressibility_[regionIdx] - oilViscosibility_[regionIdx])
-            * (pressure - pRef);
-        return BoMuoRef*bo/(1.0 + Y*(1.0 + Y/2.0));
-    }
+                                  const Evaluation& pressure) const;
 
     /*!
      * \brief Returns the formation volume factor [-] of the fluid phase.
@@ -210,8 +143,7 @@ public:
     Evaluation inverseFormationVolumeFactor(unsigned regionIdx,
                                             const Evaluation& temperature,
                                             const Evaluation& pressure,
-                                            const Evaluation& /*Rs*/) const
-    { return saturatedInverseFormationVolumeFactor(regionIdx, temperature, pressure); }
+                                            const Evaluation& /*Rs*/) const;
 
     /*!
      * \brief Returns the formation volume factor [-] of gas saturated oil.
@@ -222,15 +154,7 @@ public:
     template <class Evaluation>
     Evaluation saturatedInverseFormationVolumeFactor(unsigned regionIdx,
                                                      const Evaluation& /*temperature*/,
-                                                     const Evaluation& pressure) const
-    {
-        // cf. ECLiPSE 2011 technical description, p. 116
-        Scalar pRef = oilReferencePressure_[regionIdx];
-        const Evaluation& X = oilCompressibility_[regionIdx]*(pressure - pRef);
-
-        Scalar BoRef = oilReferenceFormationVolumeFactor_[regionIdx];
-        return (1 + X*(1 + X/2))/BoRef;
-    }
+                                                     const Evaluation& pressure) const;
 
     /*!
      * \brief Returns the gas dissolution factor \f$R_s\f$ [m^3/m^3] of the oil phase.
@@ -238,8 +162,7 @@ public:
     template <class Evaluation>
     Evaluation saturatedGasDissolutionFactor(unsigned /*regionIdx*/,
                                              const Evaluation& /*temperature*/,
-                                             const Evaluation& /*pressure*/) const
-    { return 0.0; /* this is dead oil! */ }
+                                             const Evaluation& /*pressure*/) const;
 
     /*!
      * \brief Returns the gas dissolution factor \f$R_s\f$ [m^3/m^3] of the oil phase.
@@ -249,8 +172,7 @@ public:
                                              const Evaluation& /*temperature*/,
                                              const Evaluation& /*pressure*/,
                                              const Evaluation& /*oilSaturation*/,
-                                             const Evaluation& /*maxOilSaturation*/) const
-    { return 0.0; /* this is dead oil! */ }
+                                             const Evaluation& /*maxOilSaturation*/) const;
 
     /*!
      * \brief Returns the saturation pressure of the oil phase [Pa]
@@ -261,16 +183,12 @@ public:
     template <class Evaluation>
     Evaluation saturationPressure(unsigned /*regionIdx*/,
                                   const Evaluation& /*temperature*/,
-                                  const Evaluation& /*Rs*/) const
-    { return 0.0; /* this is dead oil, so there isn't any meaningful saturation pressure! */ }
+                                  const Evaluation& /*Rs*/) const;
 
     template <class Evaluation>
     Evaluation diffusionCoefficient(const Evaluation& /*temperature*/,
                                     const Evaluation& /*pressure*/,
-                                    unsigned /*compIdx*/) const
-    {
-        throw std::runtime_error("Not implemented: The PVT model does not provide a diffusionCoefficient()");
-    }
+                                    unsigned /*compIdx*/) const;
 
     const Scalar oilReferenceDensity(unsigned regionIdx) const
     { return oilReferenceDensity_[regionIdx]; }
@@ -287,15 +205,7 @@ public:
     const std::vector<Scalar>& oilViscosibility() const
     { return oilViscosibility_; }
 
-    bool operator==(const ConstantCompressibilityOilPvt<Scalar>& data) const
-    {
-        return this->oilReferenceDensity_ == data.oilReferenceDensity_ &&
-               this->oilReferencePressure_ == data.oilReferencePressure_ &&
-               this->oilReferenceFormationVolumeFactor() == data.oilReferenceFormationVolumeFactor() &&
-               this->oilCompressibility() == data.oilCompressibility() &&
-               this->oilViscosity() == data.oilViscosity() &&
-               this->oilViscosibility() == data.oilViscosibility();
-    }
+    bool operator==(const ConstantCompressibilityOilPvt<Scalar>& data) const;
 
 private:
     std::vector<Scalar> oilReferenceDensity_;
@@ -307,5 +217,7 @@ private:
 };
 
 } // namespace Opm
+
+#include <opm/material/fluidsystems/blackoilpvt/ConstantCompressibilityOilPvt_impl.hpp>
 
 #endif
