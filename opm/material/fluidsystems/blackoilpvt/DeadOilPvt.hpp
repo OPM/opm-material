@@ -29,13 +29,11 @@
 
 #include <opm/material/common/Tabulated1DFunction.hpp>
 
-#if HAVE_ECL_INPUT
-#include <opm/input/eclipse/EclipseState/EclipseState.hpp>
-#include <opm/input/eclipse/EclipseState/Tables/PvdoTable.hpp>
-#include <opm/input/eclipse/EclipseState/Tables/TableManager.hpp>
-#endif
-
 namespace Opm {
+
+class EclipseState;
+class Schedule;
+
 /*!
  * \brief This class represents the Pressure-Volume-Temperature relations of the oil phase
  *        without dissolved gas.
@@ -50,60 +48,16 @@ public:
     DeadOilPvt(const std::vector<Scalar>& oilReferenceDensity,
                const std::vector<TabulatedOneDFunction>& inverseOilB,
                const std::vector<TabulatedOneDFunction>& oilMu,
-               const std::vector<TabulatedOneDFunction>& inverseOilBMu)
-        : oilReferenceDensity_(oilReferenceDensity)
-        , inverseOilB_(inverseOilB)
-        , oilMu_(oilMu)
-        , inverseOilBMu_(inverseOilBMu)
-    { }
+               const std::vector<TabulatedOneDFunction>& inverseOilBMu);
 
 #if HAVE_ECL_INPUT
     /*!
      * \brief Initialize the oil parameters via the data specified by the PVDO ECL keyword.
      */
-    void initFromState(const EclipseState& eclState, const Schedule&)
-    {
-        const auto& pvdoTables = eclState.getTableManager().getPvdoTables();
-        const auto& densityTable = eclState.getTableManager().getDensityTable();
-
-        assert(pvdoTables.size() == densityTable.size());
-
-        size_t numRegions = pvdoTables.size();
-        setNumRegions(numRegions);
-
-        for (unsigned regionIdx = 0; regionIdx < numRegions; ++ regionIdx) {
-            Scalar rhoRefO = densityTable[regionIdx].oil;
-            Scalar rhoRefG = densityTable[regionIdx].gas;
-            Scalar rhoRefW = densityTable[regionIdx].water;
-
-            setReferenceDensities(regionIdx, rhoRefO, rhoRefG, rhoRefW);
-
-            const auto& pvdoTable = pvdoTables.getTable<PvdoTable>(regionIdx);
-
-            const auto& BColumn(pvdoTable.getFormationFactorColumn());
-            std::vector<Scalar> invBColumn(BColumn.size());
-            for (unsigned i = 0; i < invBColumn.size(); ++i)
-                invBColumn[i] = 1/BColumn[i];
-
-            inverseOilB_[regionIdx].setXYArrays(pvdoTable.numRows(),
-                                                pvdoTable.getPressureColumn(),
-                                                invBColumn);
-            oilMu_[regionIdx].setXYArrays(pvdoTable.numRows(),
-                                          pvdoTable.getPressureColumn(),
-                                          pvdoTable.getViscosityColumn());
-        }
-
-        initEnd();
-    }
+    void initFromState(const EclipseState& eclState, const Schedule&);
 #endif // HAVE_ECL_INPUT
 
-    void setNumRegions(size_t numRegions)
-    {
-        oilReferenceDensity_.resize(numRegions);
-        inverseOilB_.resize(numRegions);
-        inverseOilBMu_.resize(numRegions);
-        oilMu_.resize(numRegions);
-    }
+    void setNumRegions(size_t numRegions);
 
     /*!
      * \brief Initialize the reference densities of all fluids for a given PVT region
@@ -111,10 +65,7 @@ public:
     void setReferenceDensities(unsigned regionIdx,
                                Scalar rhoRefOil,
                                Scalar /*rhoRefGas*/,
-                               Scalar /*rhoRefWater*/)
-    {
-        oilReferenceDensity_[regionIdx] = rhoRefOil;
-    }
+                               Scalar /*rhoRefWater*/);
 
     /*!
      * \brief Initialize the function for the oil formation volume factor
@@ -126,46 +77,20 @@ public:
      * This method sets \f$1/B_o(p_o)\f$. Note that the mass fraction of the gas
      * component in the oil phase is missing when assuming dead oil.
      */
-    void setInverseOilFormationVolumeFactor(unsigned regionIdx, const TabulatedOneDFunction& invBo)
-    { inverseOilB_[regionIdx] = invBo; }
+    void setInverseOilFormationVolumeFactor(unsigned regionIdx,
+                                            const TabulatedOneDFunction& invBo);
 
     /*!
      * \brief Initialize the viscosity of the oil phase.
      *
      * This is a function of \f$(R_s, p_o)\f$...
      */
-    void setOilViscosity(unsigned regionIdx, const TabulatedOneDFunction& muo)
-    { oilMu_[regionIdx] = muo; }
+    void setOilViscosity(unsigned regionIdx, const TabulatedOneDFunction& muo);
 
     /*!
      * \brief Finish initializing the oil phase PVT properties.
      */
-    void initEnd()
-    {
-        // calculate the final 2D functions which are used for interpolation.
-        size_t numRegions = oilMu_.size();
-        for (unsigned regionIdx = 0; regionIdx < numRegions; ++ regionIdx) {
-            // calculate the table which stores the inverse of the product of the oil
-            // formation volume factor and the oil viscosity
-            const auto& oilMu = oilMu_[regionIdx];
-            const auto& invOilB = inverseOilB_[regionIdx];
-            assert(oilMu.numSamples() == invOilB.numSamples());
-
-            std::vector<Scalar> invBMuColumn;
-            std::vector<Scalar> pressureColumn;
-            invBMuColumn.resize(oilMu.numSamples());
-            pressureColumn.resize(oilMu.numSamples());
-
-            for (unsigned pIdx = 0; pIdx < oilMu.numSamples(); ++pIdx) {
-                pressureColumn[pIdx] = invOilB.xAt(pIdx);
-                invBMuColumn[pIdx] = invOilB.valueAt(pIdx)*1/oilMu.valueAt(pIdx);
-            }
-
-            inverseOilBMu_[regionIdx].setXYArrays(pressureColumn.size(),
-                                                  pressureColumn,
-                                                  invBMuColumn);
-        }
-    }
+    void initEnd();
 
     /*!
      * \brief Return the number of PVT regions which are considered by this PVT-object.
@@ -180,10 +105,7 @@ public:
     Evaluation internalEnergy(unsigned,
                         const Evaluation&,
                         const Evaluation&,
-                        const Evaluation&) const
-    {
-        throw std::runtime_error("Requested the enthalpy of oil but the thermal option is not enabled");
-    }
+                        const Evaluation&) const;
 
     /*!
      * \brief Returns the dynamic viscosity [Pa s] of the fluid phase given a set of parameters.
@@ -192,8 +114,7 @@ public:
     Evaluation viscosity(unsigned regionIdx,
                          const Evaluation& temperature,
                          const Evaluation& pressure,
-                         const Evaluation& /*Rs*/) const
-    { return saturatedViscosity(regionIdx, temperature, pressure); }
+                         const Evaluation& /*Rs*/) const;
 
     /*!
      * \brief Returns the dynamic viscosity [Pa s] of gas saturated oil given a pressure.
@@ -201,13 +122,7 @@ public:
     template <class Evaluation>
     Evaluation saturatedViscosity(unsigned regionIdx,
                                   const Evaluation& /*temperature*/,
-                                  const Evaluation& pressure) const
-    {
-        const Evaluation& invBo = inverseOilB_[regionIdx].eval(pressure, /*extrapolate=*/true);
-        const Evaluation& invMuoBo = inverseOilBMu_[regionIdx].eval(pressure, /*extrapolate=*/true);
-
-        return invBo/invMuoBo;
-    }
+                                  const Evaluation& pressure) const;
 
     /*!
      * \brief Returns the formation volume factor [-] of the fluid phase.
@@ -216,8 +131,7 @@ public:
     Evaluation inverseFormationVolumeFactor(unsigned regionIdx,
                                             const Evaluation& /*temperature*/,
                                             const Evaluation& pressure,
-                                            const Evaluation& /*Rs*/) const
-    { return inverseOilB_[regionIdx].eval(pressure, /*extrapolate=*/true); }
+                                            const Evaluation& /*Rs*/) const;
 
     /*!
      * \brief Returns the formation volume factor [-] of saturated oil.
@@ -227,8 +141,7 @@ public:
     template <class Evaluation>
     Evaluation saturatedInverseFormationVolumeFactor(unsigned regionIdx,
                                               const Evaluation& /*temperature*/,
-                                              const Evaluation& pressure) const
-    { return inverseOilB_[regionIdx].eval(pressure, /*extrapolate=*/true); }
+                                              const Evaluation& pressure) const;
 
     /*!
      * \brief Returns the gas dissolution factor \f$R_s\f$ [m^3/m^3] of the oil phase.
@@ -236,8 +149,7 @@ public:
     template <class Evaluation>
     Evaluation saturatedGasDissolutionFactor(unsigned /*regionIdx*/,
                                              const Evaluation& /*temperature*/,
-                                             const Evaluation& /*pressure*/) const
-    { return 0.0; /* this is dead oil! */ }
+                                             const Evaluation& /*pressure*/) const;
 
     /*!
      * \brief Returns the gas dissolution factor \f$R_s\f$ [m^3/m^3] of the oil phase.
@@ -247,8 +159,7 @@ public:
                                              const Evaluation& /*temperature*/,
                                              const Evaluation& /*pressure*/,
                                              const Evaluation& /*oilSaturation*/,
-                                             const Evaluation& /*maxOilSaturation*/) const
-    { return 0.0; /* this is dead oil! */ }
+                                             const Evaluation& /*maxOilSaturation*/) const;
 
     /*!
      * \brief Returns the saturation pressure of the oil phase [Pa]
@@ -259,28 +170,12 @@ public:
     template <class Evaluation>
     Evaluation saturationPressure(unsigned /*regionIdx*/,
                                   const Evaluation& /*temperature*/,
-                                  const Evaluation& /*Rs*/) const
-    { return 0.0; /* this is dead oil, so there isn't any meaningful saturation pressure! */ }
-
-    template <class Evaluation>
-    Evaluation saturatedGasMassFraction(unsigned /*regionIdx*/,
-                                        const Evaluation& /*temperature*/,
-                                        const Evaluation& /*pressure*/) const
-    { return 0.0; /* this is dead oil! */ }
-
-    template <class Evaluation>
-    Evaluation saturatedGasMoleFraction(unsigned /*regionIdx*/,
-                                        const Evaluation& /*temperature*/,
-                                        const Evaluation& /*pressure*/) const
-    { return 0.0; /* this is dead oil! */ }
+                                  const Evaluation& /*Rs*/) const;
 
     template <class Evaluation>
     Evaluation diffusionCoefficient(const Evaluation& /*temperature*/,
                                     const Evaluation& /*pressure*/,
-                                    unsigned /*compIdx*/) const
-    {
-        throw std::runtime_error("Not implemented: The PVT model does not provide a diffusionCoefficient()");
-    }
+                                    unsigned /*compIdx*/) const;
 
     const Scalar oilReferenceDensity(unsigned regionIdx) const
     { return oilReferenceDensity_[regionIdx]; }
@@ -294,13 +189,7 @@ public:
     const std::vector<TabulatedOneDFunction>& inverseOilBMu() const
     { return inverseOilBMu_; }
 
-    bool operator==(const DeadOilPvt<Scalar>& data) const
-    {
-        return this->oilReferenceDensity_ == data.oilReferenceDensity_ &&
-               this->inverseOilB() == data.inverseOilB() &&
-               this->oilMu() == data.oilMu() &&
-               this->inverseOilBMu() == data.inverseOilBMu();
-    }
+    bool operator==(const DeadOilPvt<Scalar>& data) const;
 
 private:
     std::vector<Scalar> oilReferenceDensity_;
@@ -310,5 +199,7 @@ private:
 };
 
 } // namespace Opm
+
+#include <opm/material/fluidsystems/blackoilpvt/DeadOilPvt_impl.hpp>
 
 #endif
