@@ -218,6 +218,8 @@ private:
 
 } // namespace Opm
 
+#ifndef OPM_USE_PRIVATE_TEMPLATES
 #include <opm/material/fluidsystems/blackoilpvt/ConstantCompressibilityOilPvt_impl.hpp>
+#endif
 
 #endif
