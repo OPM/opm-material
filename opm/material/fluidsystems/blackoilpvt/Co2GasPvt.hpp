@@ -181,6 +181,8 @@ private:
 
 } // namespace Opm
 
+#ifndef OPM_USE_PRIVATE_TEMPLATES
 #include <opm/material/fluidsystems/blackoilpvt/Co2GasPvt_impl.hpp>
+#endif
 
 #endif
