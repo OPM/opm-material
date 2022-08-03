@@ -200,6 +200,8 @@ private:
 
 } // namespace Opm
 
+#ifndef OPM_USE_PRIVATE_TEMPLATES
 #include <opm/material/fluidsystems/blackoilpvt/DeadOilPvt_impl.hpp>
+#endif
 
 #endif
