@@ -293,6 +293,8 @@ private:
 
 } // namespace Opm
 
+#ifndef OPM_USE_PRIVATE_TEMPLATES
 #include <opm/material/fluidsystems/blackoilpvt/GasPvtMultiplexer_impl.hpp>
+#endif
 
 #endif
