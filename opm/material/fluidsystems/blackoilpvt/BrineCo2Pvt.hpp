@@ -250,6 +250,8 @@ private:
 
 } // namespace Opm
 
+#ifndef OPM_USE_PRIVATE_TEMPLATES
 #include <opm/material/fluidsystems/blackoilpvt/BrineCo2Pvt_impl.hpp>
+#endif
 
 #endif
