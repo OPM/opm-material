@@ -173,6 +173,8 @@ private:
 
 } // namespace Opm
 
+#ifndef OPM_USE_PRIVATE_TEMPLATES
 #include <opm/material/fluidsystems/blackoilpvt/WaterPvtMultiplexer_impl.hpp>
+#endif
 
 #endif
