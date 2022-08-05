@@ -287,7 +287,7 @@ protected:
         FlashEval p0 = inputFluidState.pressure(0);
         p0.setDerivative(p0PvIdx, 1.0);
 
-        std::array<FlashEval, numPhases> pc;
+        FlashEval pc[numPhases];
         MaterialLaw::capillaryPressures(pc, matParams, flashFluidState);
         for (unsigned phaseIdx = 0; phaseIdx < numPhases; ++phaseIdx)
             flashFluidState.setPressure(phaseIdx, p0 + (pc[phaseIdx] - pc[0]));
@@ -418,7 +418,7 @@ protected:
         // update the pressures using the material law (saturations
         // and first pressure are already set because it is implicitly
         // solved for.)
-        Dune::FieldVector<FlashEval, numPhases> pC;
+        FlashEval pC[numPhases];
         MaterialLaw::capillaryPressures(pC, matParams, flashFluidState);
         for (unsigned phaseIdx = 1; phaseIdx < numPhases; ++phaseIdx)
             flashFluidState.setPressure(phaseIdx,
