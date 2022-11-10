@@ -835,7 +835,12 @@ private:
         case SatFuncControls::KeywordFamily::Family_II:
         {
             const SgfnTable& sgfnTable = tableManager.getSgfnTables().getTable<SgfnTable>( satRegionIdx );
-            if (!hasWater) {
+            bool co2store = eclState.runspec().co2Storage();
+            if (co2store) {
+                const SwfnTable& swfnTable = tableManager.getSwfnTables().getTable<SwfnTable>( satRegionIdx );
+                readGasOilEffectiveParametersFamily2_(effParams, Swco, tolcrit, swfnTable, sgfnTable);
+            }
+            else if (!hasWater) {
                 // oil and gas case
                 const Sof2Table& sof2Table = tableManager.getSof2Tables().getTable<Sof2Table>( satRegionIdx );
                 readGasOilEffectiveParametersFamily2_(effParams, Swco, tolcrit, sof2Table, sgfnTable);
@@ -931,6 +936,28 @@ private:
         auto& realParams = effParams.template getRealParams<SatCurveMultiplexerApproach::PiecewiseLinearApproach>();
 
         realParams.setKrwSamples(SoColumn, normalizeKrValues_(tolcrit, sof2Table.getColumn("KRO")));
+        realParams.setKrnSamples(SoSamples, normalizeKrValues_(tolcrit, sgfnTable.getColumn("KRG")));
+        realParams.setPcnwSamples(SoSamples, sgfnTable.getColumn("PCOG").vectorCopy());
+        realParams.finalize();
+    }
+
+    void readGasOilEffectiveParametersFamily2_(GasOilEffectiveTwoPhaseParams& effParams,
+                                               const Scalar Swco,
+                                               const double tolcrit,
+                                               const SwfnTable& swfnTable,
+                                               const SgfnTable& sgfnTable)
+    {
+        // convert the saturations of the SGFN keyword from gas to oil saturations
+        std::vector<double> SoSamples(sgfnTable.numRows());
+        std::vector<double> SoColumn = swfnTable.getColumn("SW").vectorCopy();
+        for (size_t sampleIdx = 0; sampleIdx < sgfnTable.numRows(); ++ sampleIdx) {
+            SoSamples[sampleIdx] = (1.0 - Swco) - sgfnTable.get("SG", sampleIdx);
+        }
+
+        effParams.setApproach(SatCurveMultiplexerApproach::PiecewiseLinearApproach);
+        auto& realParams = effParams.template getRealParams<SatCurveMultiplexerApproach::PiecewiseLinearApproach>();
+
+        realParams.setKrwSamples(SoColumn, normalizeKrValues_(tolcrit, swfnTable.getColumn("KRW")));
         realParams.setKrnSamples(SoSamples, normalizeKrValues_(tolcrit, sgfnTable.getColumn("KRG")));
         realParams.setPcnwSamples(SoSamples, sgfnTable.getColumn("PCOG").vectorCopy());
         realParams.finalize();
