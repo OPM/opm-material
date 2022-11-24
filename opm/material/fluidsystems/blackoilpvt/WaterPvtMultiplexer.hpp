@@ -30,6 +30,7 @@
 #include "ConstantCompressibilityWaterPvt.hpp"
 #include "ConstantCompressibilityBrinePvt.hpp"
 #include "WaterPvtThermal.hpp"
+#include "BrineCo2Pvt.hpp"
 
 #if HAVE_ECL_INPUT
 #include <opm/input/eclipse/EclipseState/EclipseState.hpp>
@@ -52,7 +53,12 @@
         auto& pvtImpl = getRealPvt<WaterPvtApproach::ThermalWaterPvt>();                  \
         codeToCall;                                                     \
         break;                                                          \
-    }                                                                   \
+    }                                                                    \
+    case WaterPvtApproach::BrineCo2Pvt: {                                              \
+        auto& pvtImpl = getRealPvt<WaterPvtApproach::BrineCo2Pvt>();                   \
+        codeToCall;                                                                  \
+        break;                                                                       \
+    }                                                                    \
     case WaterPvtApproach::NoWaterPvt:                                  \
         throw std::logic_error("Not implemented: Water PVT of this deck!"); \
     }
@@ -63,7 +69,8 @@ enum class WaterPvtApproach {
     NoWaterPvt,
     ConstantCompressibilityBrinePvt,
     ConstantCompressibilityWaterPvt,
-    ThermalWaterPvt
+    ThermalWaterPvt,
+    BrineCo2Pvt
 };
 
 /*!
@@ -105,6 +112,10 @@ public:
             delete &getRealPvt<WaterPvtApproach::ThermalWaterPvt>();
             break;
         }
+        case WaterPvtApproach::BrineCo2Pvt: {
+            delete &getRealPvt<WaterPvtApproach::BrineCo2Pvt>();
+            break;
+        }
         case WaterPvtApproach::NoWaterPvt:
             break;
         }
@@ -121,7 +132,9 @@ public:
         if (!eclState.runspec().phases().active(Phase::WATER))
             return;
 
-        if (enableThermal && eclState.getSimulationConfig().isThermal())
+        if (eclState.runspec().co2Storage())
+            setApproach(WaterPvtApproach::BrineCo2Pvt);
+        else if (enableThermal && eclState.getSimulationConfig().isThermal())
             setApproach(WaterPvtApproach::ThermalWaterPvt);
         else if (!eclState.getTableManager().getPvtwTable().empty())
             setApproach(WaterPvtApproach::ConstantCompressibilityWaterPvt);
@@ -154,8 +167,9 @@ public:
     Evaluation internalEnergy(unsigned regionIdx,
                         const Evaluation& temperature,
                         const Evaluation& pressure,
+                        const Evaluation& Rsw,
                         const Evaluation& saltconcentration) const
-    { OPM_WATER_PVT_MULTIPLEXER_CALL(return pvtImpl.internalEnergy(regionIdx, temperature, pressure, saltconcentration)); return 0; }
+    { OPM_WATER_PVT_MULTIPLEXER_CALL(return pvtImpl.internalEnergy(regionIdx, temperature, pressure, Rsw, saltconcentration)); return 0; }
 
     /*!
      * \brief Returns the dynamic viscosity [Pa s] of the fluid phase given a set of parameters.
@@ -164,9 +178,23 @@ public:
     Evaluation viscosity(unsigned regionIdx,
                          const Evaluation& temperature,
                          const Evaluation& pressure,
+                         const Evaluation& Rsw,
                          const Evaluation& saltconcentration) const
     {
-        OPM_WATER_PVT_MULTIPLEXER_CALL(return pvtImpl.viscosity(regionIdx, temperature, pressure, saltconcentration));
+        OPM_WATER_PVT_MULTIPLEXER_CALL(return pvtImpl.viscosity(regionIdx, temperature, pressure, Rsw, saltconcentration));
+        return 0;
+    }
+
+    /*!
+     * \brief Returns the dynamic viscosity [Pa s] of the fluid phase given a set of parameters.
+     */
+    template <class Evaluation>
+    Evaluation saturatedViscosity(unsigned regionIdx,
+                         const Evaluation& temperature,
+                         const Evaluation& pressure,
+                         const Evaluation& saltconcentration) const
+    {
+        OPM_WATER_PVT_MULTIPLEXER_CALL(return pvtImpl.saturatedViscosity(regionIdx, temperature, pressure, saltconcentration));
         return 0;
     }
 
@@ -177,10 +205,48 @@ public:
     Evaluation inverseFormationVolumeFactor(unsigned regionIdx,
                                             const Evaluation& temperature,
                                             const Evaluation& pressure,
+                                            const Evaluation& Rsw,
                                             const Evaluation& saltconcentration) const
-    {   OPM_WATER_PVT_MULTIPLEXER_CALL(return pvtImpl.inverseFormationVolumeFactor(regionIdx, temperature, pressure, saltconcentration));
+    {   OPM_WATER_PVT_MULTIPLEXER_CALL(return pvtImpl.inverseFormationVolumeFactor(regionIdx, temperature, pressure, Rsw, saltconcentration));
         return 0;
     }
+
+        /*!
+     * \brief Returns the formation volume factor [-] of the fluid phase.
+     */
+    template <class Evaluation>
+    Evaluation saturatedInverseFormationVolumeFactor(unsigned regionIdx,
+                                            const Evaluation& temperature,
+                                            const Evaluation& pressure,
+                                            const Evaluation& saltconcentration) const                                          
+    {   OPM_WATER_PVT_MULTIPLEXER_CALL(return pvtImpl.saturatedInverseFormationVolumeFactor(regionIdx, temperature, pressure, saltconcentration));
+        return 0;
+    }
+
+    /*!
+     * \brief Returns the gas dissolution factor \f$R_s\f$ [m^3/m^3] of saturated water.
+     */
+    template <class Evaluation>
+    Evaluation saturatedGasDissolutionFactor(unsigned regionIdx,
+                                             const Evaluation& temperature,
+                                             const Evaluation& pressure,
+                                             const Evaluation& saltconcentration) const
+    { OPM_WATER_PVT_MULTIPLEXER_CALL(return pvtImpl.saturatedGasDissolutionFactor(regionIdx, temperature, pressure, saltconcentration)); return 0; }
+
+    /*!
+     * \brief Returns the saturation pressure [Pa] of water given the mass fraction of the
+     *        gas component in the water phase.
+     *
+     * Calling this method only makes sense for water that allows for dissolved gas. All other implementations of
+     * the black-oil PVT interface will just throw an exception...
+     */
+    template <class Evaluation>
+    Evaluation saturationPressure(unsigned regionIdx,
+                                  const Evaluation& temperature,
+                                  const Evaluation& Rs,
+                                  const Evaluation& saltconcentration) const
+    { OPM_WATER_PVT_MULTIPLEXER_CALL(return pvtImpl.saturationPressure(regionIdx, temperature, Rs, saltconcentration)); return 0; }
+
 
     void setApproach(WaterPvtApproach appr)
     {
@@ -195,6 +261,10 @@ public:
 
         case WaterPvtApproach::ThermalWaterPvt:
             realWaterPvt_ = new WaterPvtThermal<Scalar, enableBrine>;
+            break;
+
+        case WaterPvtApproach::BrineCo2Pvt:
+            realWaterPvt_ = new BrineCo2Pvt<Scalar>;
             break;
 
         case WaterPvtApproach::NoWaterPvt:
@@ -255,6 +325,20 @@ public:
         return *static_cast<WaterPvtThermal<Scalar, enableBrine>* >(realWaterPvt_);
     }
 
+    template <WaterPvtApproach approachV>
+    typename std::enable_if<approachV == WaterPvtApproach::BrineCo2Pvt, BrineCo2Pvt<Scalar> >::type& getRealPvt()
+    {
+        assert(approach() == approachV);
+        return *static_cast<BrineCo2Pvt<Scalar>* >(realWaterPvt_);
+    }
+
+    template <WaterPvtApproach approachV>
+    typename std::enable_if<approachV == WaterPvtApproach::BrineCo2Pvt, const BrineCo2Pvt<Scalar> >::type& getRealPvt() const
+    {
+        assert(approach() == approachV);
+        return *static_cast<const BrineCo2Pvt<Scalar>* >(realWaterPvt_);
+    }
+
     const void* realWaterPvt() const { return realWaterPvt_; }
 
     bool operator==(const WaterPvtMultiplexer<Scalar,enableThermal,enableBrine>& data) const
@@ -272,6 +356,9 @@ public:
         case WaterPvtApproach::ThermalWaterPvt:
             return *static_cast<const WaterPvtThermal<Scalar, enableBrine>*>(realWaterPvt_) ==
                    *static_cast<const WaterPvtThermal<Scalar, enableBrine>*>(data.realWaterPvt_);
+        case WaterPvtApproach::BrineCo2Pvt:
+            return *static_cast<const BrineCo2Pvt<Scalar>*>(realWaterPvt_) ==
+                    *static_cast<const BrineCo2Pvt<Scalar>*>(data.realWaterPvt_);
         default:
             return true;
         }
@@ -289,6 +376,9 @@ public:
             break;
         case WaterPvtApproach::ThermalWaterPvt:
             realWaterPvt_ = new WaterPvtThermal<Scalar, enableBrine>(*static_cast<const WaterPvtThermal<Scalar, enableBrine>*>(data.realWaterPvt_));
+            break;
+        case WaterPvtApproach::BrineCo2Pvt:
+            realWaterPvt_ = new BrineCo2Pvt<Scalar>(*static_cast<const BrineCo2Pvt<Scalar>*>(data.realWaterPvt_));
             break;
         default:
             break;
