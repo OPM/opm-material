@@ -129,7 +129,7 @@ public:
     using Scalar = ScalarT;
     enum { numPhases = FluidSystem::numPhases };
     enum { numComponents = FluidSystem::numComponents };
-    static const bool enableDissolutionInWater = false;
+    static const bool enableDissolutionInWater = true;
 
     /*!
      * \brief Make sure that all attributes are defined.

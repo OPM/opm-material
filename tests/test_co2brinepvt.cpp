@@ -101,7 +101,7 @@ static const char* deckString2 =
     "GAS\n"
     "CO2STORE\n"
     "\n"
-    "DISGAS\n"
+    "DISGASW\n"
     "\n"
     "METRIC\n"
     "\n"

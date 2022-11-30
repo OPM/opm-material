@@ -266,8 +266,12 @@ public:
         setEnableVaporizedOil(eclState.getSimulationConfig().hasVAPOIL());
         setEnableVaporizedWater(eclState.getSimulationConfig().hasVAPWAT());
 
-        // TODO
-        setEnableDissolvedGasInWater(false); // True = DISGAS + CO2STORE + WATER + GAS
+        if(eclState.getSimulationConfig().hasDISGASW()) {
+            if(eclState.runspec().co2Storage())
+                setEnableDissolvedGasInWater(eclState.getSimulationConfig().hasDISGASW());
+            else
+                throw std::runtime_error("DISGASW only supported in combination with CO2STORE");
+        }
 
         if (phaseIsActive(gasPhaseIdx)) {
             gasPvt_ = std::make_shared<GasPvt>();
@@ -297,11 +301,13 @@ public:
 
         // use molarMass of CO2 and Brine as default
         // when we are using the the CO2STORE option
-        // NB the oil component is used internally for
-        // brine
         if (eclState.runspec().co2Storage()) {
             for (unsigned regionIdx = 0; regionIdx < numRegions; ++regionIdx) {
-                molarMass_[regionIdx][oilCompIdx] = BrineCo2Pvt<Scalar>::Brine::molarMass();
+                if(phaseIsActive(oilPhaseIdx)) // The oil component is used for the brine if OIL is active
+                    molarMass_[regionIdx][oilCompIdx] = BrineCo2Pvt<Scalar>::Brine::molarMass();
+                if(phaseIsActive(waterPhaseIdx))
+                    molarMass_[regionIdx][oilCompIdx] = BrineCo2Pvt<Scalar>::Brine::molarMass();
+                assert(phaseIsActive(gasPhaseIdx));
                 molarMass_[regionIdx][gasCompIdx] = BrineCo2Pvt<Scalar>::CO2::molarMass();
             }
         }

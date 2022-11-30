@@ -132,6 +132,8 @@ public:
         if (!eclState.runspec().phases().active(Phase::WATER))
             return;
 
+        // The co2Storage option both works with oil + gas
+        // and water/brine + gas
         if (eclState.runspec().co2Storage())
             setApproach(WaterPvtApproach::BrineCo2Pvt);
         else if (enableThermal && eclState.getSimulationConfig().isThermal())
