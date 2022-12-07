@@ -114,6 +114,7 @@ template <class ScalarT,
           bool enableEvaporation = false,
           bool enableBrine = false,
           bool enableSaltPrecipitation = false,
+          bool enableDissolutionInWater = false,
           unsigned numStoragePhases = FluidSystem::numPhases>
 class BlackOilFluidState
 {
@@ -129,7 +130,6 @@ public:
     using Scalar = ScalarT;
     enum { numPhases = FluidSystem::numPhases };
     enum { numComponents = FluidSystem::numComponents };
-    static const bool enableDissolutionInWater = true;
 
     /*!
      * \brief Make sure that all attributes are defined.
