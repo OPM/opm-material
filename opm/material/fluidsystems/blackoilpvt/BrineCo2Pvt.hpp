@@ -185,10 +185,10 @@ public:
      */
     template <class Evaluation>
     Evaluation internalEnergy(unsigned regionIdx,
-                        const Evaluation& temperature,
-                        const Evaluation& pressure,
-                        const Evaluation& Rs,
-                        const Evaluation& /*saltConcentration*/) const
+                              const Evaluation& temperature,
+                              const Evaluation& pressure,
+                              const Evaluation& Rs,
+                              const Evaluation& /*saltConcentration*/) const
     {
         return internalEnergy(regionIdx, temperature, pressure, Rs);
     }
@@ -228,9 +228,9 @@ public:
      */
     template <class Evaluation>
     Evaluation saturatedViscosity(unsigned regionIdx,
-                         const Evaluation& temperature,
-                         const Evaluation& pressure,
-                         const Evaluation& /*saltConcentration*/) const
+                                 const Evaluation& temperature,
+                                 const Evaluation& pressure,
+                                 const Evaluation& /*saltConcentration*/) const
     {
         //TODO: The viscosity does not yet depend on the composition
         return saturatedViscosity(regionIdx, temperature, pressure);
@@ -267,9 +267,9 @@ public:
      */
     template <class Evaluation>
     Evaluation saturatedInverseFormationVolumeFactor(unsigned regionIdx,
-                                            const Evaluation& temperature,
-                                            const Evaluation& pressure,
-                                            const Evaluation& /*saltconcentration*/) const
+                                                     const Evaluation& temperature,
+                                                     const Evaluation& pressure,
+                                                     const Evaluation& /*saltconcentration*/) const
     {
         return saturatedInverseFormationVolumeFactor(regionIdx, temperature, pressure);
     }

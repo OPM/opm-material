@@ -192,9 +192,9 @@ public:
      */
     template <class Evaluation>
     Evaluation saturatedViscosity(unsigned regionIdx,
-                         const Evaluation& temperature,
-                         const Evaluation& pressure,
-                         const Evaluation& saltconcentration) const
+                                  const Evaluation& temperature,
+                                  const Evaluation& pressure,
+                                  const Evaluation& saltconcentration) const
     {
         Scalar pRef = referencePressure_[regionIdx];
         const Evaluation C = compressibilityTables_[regionIdx].eval(saltconcentration, /*extrapolate=*/true);
@@ -213,9 +213,9 @@ public:
      */
     template <class Evaluation>
     Evaluation saturatedInverseFormationVolumeFactor(unsigned regionIdx,
-                                            const Evaluation& temperature,
-                                            const Evaluation& pressure,
-                                            const Evaluation& saltconcentration) const
+                                                    const Evaluation& temperature,
+                                                    const Evaluation& pressure,
+                                                    const Evaluation& saltconcentration) const
     {
         Evaluation Rsw = 0.0;
         return inverseFormationVolumeFactor(regionIdx, temperature, pressure, Rsw, saltconcentration);

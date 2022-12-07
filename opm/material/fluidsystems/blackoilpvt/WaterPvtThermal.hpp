@@ -359,9 +359,9 @@ public:
      */
     template <class Evaluation>
     Evaluation saturatedViscosity(unsigned regionIdx,
-                         const Evaluation& temperature,
-                         const Evaluation& pressure,
-                         const Evaluation& saltconcentration) const
+                                  const Evaluation& temperature,
+                                  const Evaluation& pressure,
+                                  const Evaluation& saltconcentration) const
     {
         const auto& isothermalMu = isothermalPvt_->saturatedViscosity(regionIdx, temperature, pressure, saltconcentration);
         if (!enableThermalViscosity())
@@ -380,9 +380,9 @@ public:
      */
     template <class Evaluation>
     Evaluation saturatedInverseFormationVolumeFactor(unsigned regionIdx,
-                                            const Evaluation& temperature,
-                                            const Evaluation& pressure,
-                                            const Evaluation& saltconcentration) const
+                                                     const Evaluation& temperature,
+                                                     const Evaluation& pressure,
+                                                     const Evaluation& saltconcentration) const
     {
         Evaluation Rsw = 0.0;
         return inverseFormationVolumeFactor(regionIdx, temperature, pressure, Rsw, saltconcentration);

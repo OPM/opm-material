@@ -174,9 +174,9 @@ public:
      */
     template <class Evaluation>
     Evaluation saturatedViscosity(unsigned regionIdx,
-                         const Evaluation& temperature,
-                         const Evaluation& pressure,
-                         const Evaluation& saltconcentration) const
+                                  const Evaluation& temperature,
+                                  const Evaluation& pressure,
+                                  const Evaluation& saltconcentration) const
     {
         Scalar BwMuwRef = waterViscosity_[regionIdx]*waterReferenceFormationVolumeFactor_[regionIdx];
         const Evaluation& bw = saturatedInverseFormationVolumeFactor(regionIdx, temperature, pressure, saltconcentration);
@@ -212,9 +212,9 @@ public:
      */
     template <class Evaluation>
     Evaluation saturatedInverseFormationVolumeFactor(unsigned regionIdx,
-                                                    const Evaluation& temperature,
-                                                    const Evaluation& pressure,
-                                                    const Evaluation& saltconcentration) const
+                                                     const Evaluation& temperature,
+                                                     const Evaluation& pressure,
+                                                     const Evaluation& saltconcentration) const
     {
       Evaluation Rsw = 0.0;
       return inverseFormationVolumeFactor(regionIdx, temperature, pressure, Rsw, saltconcentration);

@@ -192,9 +192,9 @@ public:
      */
     template <class Evaluation>
     Evaluation saturatedViscosity(unsigned regionIdx,
-                         const Evaluation& temperature,
-                         const Evaluation& pressure,
-                         const Evaluation& saltconcentration) const
+                                  const Evaluation& temperature,
+                                  const Evaluation& pressure,
+                                  const Evaluation& saltconcentration) const
     {
         OPM_WATER_PVT_MULTIPLEXER_CALL(return pvtImpl.saturatedViscosity(regionIdx, temperature, pressure, saltconcentration));
         return 0;
@@ -218,9 +218,9 @@ public:
      */
     template <class Evaluation>
     Evaluation saturatedInverseFormationVolumeFactor(unsigned regionIdx,
-                                            const Evaluation& temperature,
-                                            const Evaluation& pressure,
-                                            const Evaluation& saltconcentration) const                                          
+                                                     const Evaluation& temperature,
+                                                     const Evaluation& pressure,
+                                                     const Evaluation& saltconcentration) const
     {   OPM_WATER_PVT_MULTIPLEXER_CALL(return pvtImpl.saturatedInverseFormationVolumeFactor(regionIdx, temperature, pressure, saltconcentration));
         return 0;
     }
