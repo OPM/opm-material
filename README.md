@@ -1,5 +1,4 @@
-The Open Porous Media Material Framework [![Build Status](https://travis-ci.org/OPM/opm-material.svg?branch=master)](https://travis-ci.org/OPM/opm-material)
-========================================
+THIS MODULE IS DEPRECATED The material module have been integrated into opm-common
 
 CONTENT
 -------
