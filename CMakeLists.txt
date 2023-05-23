@@ -19,6 +19,10 @@ project(opm-material C CXX)
 
 cmake_minimum_required (VERSION 3.10)
 
+message(FATAL_ERROR "\
+THIS MODULE IS DEPRECATED. \
+The material module has been integrated into opm-common. ")
+
 option(SIBLING_SEARCH "Search for other modules in sibling directories?" ON)
 
 if(SIBLING_SEARCH AND NOT opm-common_DIR)
